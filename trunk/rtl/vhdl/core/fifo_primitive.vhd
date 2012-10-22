@@ -1,52 +1,72 @@
------------------------------------------------------------------------------------- 
---			
--- Geoffrey Ottoy - DraMCo research group
---
--- Module Name:	adder_n.vhd / entity adder_n
--- 
--- Last Modified:	04/04/2012 
--- 
--- Description: 	512x32-bit fifo
---
---
--- Dependencies: 	FIFO18E1 primitive
---
--- Revision:
---	Revision 1.00 - Architecture
---	Revision 0.01 - File Created
---
---
-------------------------------------------------------------------------------------
---
--- NOTICE:
---
--- Copyright DraMCo research group. 2011. This code may be contain portions patented
--- by other third parties!
---
-------------------------------------------------------------------------------------
-library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;
-use IEEE.STD_LOGIC_ARITH.ALL;
-use IEEE.STD_LOGIC_UNSIGNED.ALL;
+----------------------------------------------------------------------  
+----  fifo_primitive                                              ---- 
+----                                                              ---- 
+----  This file is part of the                                    ----
+----    Modular Simultaneous Exponentiation Core project          ---- 
+----    http://www.opencores.org/cores/mod_sim_exp/               ---- 
+----                                                              ---- 
+----  Description                                                 ---- 
+----    512 x 32 bit fifo                                         ----
+----                                                              ---- 
+----  Dependencies:                                               ----
+----    - FIFO18E1 (xilinx primitive)                             ----
+----                                                              ----
+----  Authors:                                                    ----
+----      - Geoffrey Ottoy, DraMCo research group                 ----
+----      - Jonas De Craene, JonasDC@opencores.org                ---- 
+----                                                              ---- 
+---------------------------------------------------------------------- 
+----                                                              ---- 
+---- Copyright (C) 2011 DraMCo research group and OPENCORES.ORG   ---- 
+----                                                              ---- 
+---- This source file may be used and distributed without         ---- 
+---- restriction provided that this copyright statement is not    ---- 
+---- removed from the file and that any derivative work contains  ---- 
+---- the original copyright notice and the associated disclaimer. ---- 
+----                                                              ---- 
+---- This source file is free software; you can redistribute it   ---- 
+---- and/or modify it under the terms of the GNU Lesser General   ---- 
+---- Public License as published by the Free Software Foundation; ---- 
+---- either version 2.1 of the License, or (at your option) any   ---- 
+---- later version.                                               ---- 
+----                                                              ---- 
+---- This source is distributed in the hope that it will be       ---- 
+---- useful, but WITHOUT ANY WARRANTY; without even the implied   ---- 
+---- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR      ---- 
+---- PURPOSE.  See the GNU Lesser General Public License for more ---- 
+---- details.                                                     ---- 
+----                                                              ---- 
+---- You should have received a copy of the GNU Lesser General    ---- 
+---- Public License along with this source; if not, download it   ---- 
+---- from http://www.opencores.org/lgpl.shtml                     ---- 
+----                                                              ---- 
+----------------------------------------------------------------------
 
----- Uncomment the following library declaration if instantiating
----- any Xilinx primitives in this code.
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.std_logic_arith.all;
+use ieee.std_logic_unsigned.all;
+
+-- Xilinx primitives used in this code.
 library UNISIM;
 use UNISIM.VComponents.all;
 
+
 entity fifo_primitive is
-    Port ( clk : in  STD_LOGIC;
-           din : in  STD_LOGIC_VECTOR (31 downto 0);
-           dout : out  STD_LOGIC_VECTOR (31 downto 0);
-           empty : out  STD_LOGIC;
-           full : out  STD_LOGIC;
-           push : in  STD_LOGIC;
-           pop : in  STD_LOGIC;
-			  reset : in STD_LOGIC;
-			  nopop : out STD_LOGIC;
-			  nopush : out STD_LOGIC
-			  );
+  port (
+    clk    : in  std_logic;
+    din    : in  std_logic_vector (31 downto 0);
+    dout   : out  std_logic_vector (31 downto 0);
+    empty  : out  std_logic;
+    full   : out  std_logic;
+    push   : in  std_logic;
+    pop    : in  std_logic;
+    reset  : in std_logic;
+    nopop  : out std_logic;
+    nopush : out std_logic
+  );
 end fifo_primitive;
+
 
 architecture Behavioral of fifo_primitive is
 	signal rdcount : std_logic_vector(11 downto 0); -- debugging
@@ -90,7 +110,7 @@ begin
       DATA_WIDTH => 36,                 -- Sets data width to 4, 9, 18, or 36
       DO_REG => 1,                      -- Enable output register (0 or 1) Must be 1 if EN_SYN = "FALSE" 
       EN_SYN => TRUE,                   -- Specifies FIFO as dual-clock ("FALSE") or Synchronous ("TRUE")
-      FIFO_MODE => "FIFO18_36",            -- Sets mode to FIFO18 or FIFO18_36
+      FIFO_MODE => "FIFO18_36",         -- Sets mode to FIFO18 or FIFO18_36
       FIRST_WORD_FALL_THROUGH => FALSE, -- Sets the FIFO FWFT to "TRUE" or "FALSE" 
       INIT => X"000000000",             -- Initial values on output port
       SRVAL => X"000000000"             -- Set/Reset value for output port
@@ -103,22 +123,21 @@ begin
       EMPTY => empty_i,             -- 1-bit empty output flag
       FULL => full_i,               -- 1-bit full output flag
       -- WRCOUNT, RDCOUNT: 12-bit (each) FIFO pointers
-      RDCOUNT => RDCOUNT,         -- 12-bit read count output
-      WRCOUNT => WRCOUNT,         -- 12-bit write count output
+      RDCOUNT => RDCOUNT,           -- 12-bit read count output
+      WRCOUNT => WRCOUNT,           -- 12-bit write count output
       -- WRERR, RDERR: 1-bit (each) FIFO full or empty error
       RDERR => rderr_i,             -- 1-bit read error output
       WRERR => wrerr_i,             -- 1-bit write error
-      DI => din,                   -- 32-bit data input
-      DIP => "0000",                 -- 4-bit parity input
-      RDEN => pop_i,               -- 1-bit read enable input
-      REGCE => '1',             -- 1-bit clock enable input
-      RST => reset_i,                 -- 1-bit reset input
-      RSTREG => reset_i,           -- 1-bit output register set/reset
+      DI => din,                    -- 32-bit data input
+      DIP => "0000",                -- 4-bit parity input
+      RDEN => pop_i,                -- 1-bit read enable input
+      REGCE => '1',                 -- 1-bit clock enable input
+      RST => reset_i,               -- 1-bit reset input
+      RSTREG => reset_i,            -- 1-bit output register set/reset
       -- WRCLK, RDCLK: 1-bit (each) Clocks
-      RDCLK => clk,             -- 1-bit read clock input
-      WRCLK => clk,             -- 1-bit write clock input
+      RDCLK => clk,                 -- 1-bit read clock input
+      WRCLK => clk,                 -- 1-bit write clock input
       WREN => push_i                -- 1-bit write enable input
    );
 
 end Behavioral;
-
