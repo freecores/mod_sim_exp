@@ -1,31 +1,75 @@
---------------------------------------------------------------------------------
---     This file is owned and controlled by Xilinx and must be used           --
---     solely for design, simulation, implementation and creation of          --
---     design files limited to Xilinx devices or technologies. Use            --
---     with non-Xilinx devices or technologies is expressly prohibited        --
---     and immediately terminates your license.                               --
---                                                                            --
---     XILINX IS PROVIDING THIS DESIGN, CODE, OR INFORMATION "AS IS"          --
---     SOLELY FOR USE IN DEVELOPING PROGRAMS AND SOLUTIONS FOR                --
---     XILINX DEVICES.  BY PROVIDING THIS DESIGN, CODE, OR INFORMATION        --
---     AS ONE POSSIBLE IMPLEMENTATION OF THIS FEATURE, APPLICATION            --
---     OR STANDARD, XILINX IS MAKING NO REPRESENTATION THAT THIS              --
---     IMPLEMENTATION IS FREE FROM ANY CLAIMS OF INFRINGEMENT,                --
---     AND YOU ARE RESPONSIBLE FOR OBTAINING ANY RIGHTS YOU MAY REQUIRE       --
---     FOR YOUR IMPLEMENTATION.  XILINX EXPRESSLY DISCLAIMS ANY               --
---     WARRANTY WHATSOEVER WITH RESPECT TO THE ADEQUACY OF THE                --
---     IMPLEMENTATION, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OR         --
---     REPRESENTATIONS THAT THIS IMPLEMENTATION IS FREE FROM CLAIMS OF        --
---     INFRINGEMENT, IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS        --
---     FOR A PARTICULAR PURPOSE.                                              --
---                                                                            --
---     Xilinx products are not intended for use in life support               --
---     appliances, devices, or systems. Use in such applications are          --
---     expressly prohibited.                                                  --
---                                                                            --
---     (c) Copyright 1995-2009 Xilinx, Inc.                                   --
---     All rights reserved.                                                   --
---------------------------------------------------------------------------------
+----------------------------------------------------------------------  
+----  operand_dp                                                  ---- 
+----                                                              ---- 
+----  This file is part of the                                    ----
+----    Modular Simultaneous Exponentiation Core project          ---- 
+----    http://www.opencores.org/cores/mod_sim_exp/               ---- 
+----                                                              ---- 
+----  Description                                                 ---- 
+----    4 x 512 bit dual port ram for the operands                ----
+----    32 bit read and write for bus side and 512 bit read and   ----
+----    write for multiplier side                                 ----
+----                                                              ---- 
+----  Dependencies: none                                          ----
+----                                                              ----
+----  Authors:                                                    ----
+----      - Geoffrey Ottoy, DraMCo research group                 ----
+----      - Jonas De Craene, JonasDC@opencores.org                ---- 
+----                                                              ---- 
+---------------------------------------------------------------------- 
+----                                                              ---- 
+---- Copyright (C) 2011 DraMCo research group and OPENCORES.ORG   ---- 
+----                                                              ---- 
+---- This source file may be used and distributed without         ---- 
+---- restriction provided that this copyright statement is not    ---- 
+---- removed from the file and that any derivative work contains  ---- 
+---- the original copyright notice and the associated disclaimer. ---- 
+----                                                              ---- 
+---- This source file is free software; you can redistribute it   ---- 
+---- and/or modify it under the terms of the GNU Lesser General   ---- 
+---- Public License as published by the Free Software Foundation; ---- 
+---- either version 2.1 of the License, or (at your option) any   ---- 
+---- later version.                                               ---- 
+----                                                              ---- 
+---- This source is distributed in the hope that it will be       ---- 
+---- useful, but WITHOUT ANY WARRANTY; without even the implied   ---- 
+---- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR      ---- 
+---- PURPOSE.  See the GNU Lesser General Public License for more ---- 
+---- details.                                                     ---- 
+----                                                              ---- 
+---- You should have received a copy of the GNU Lesser General    ---- 
+---- Public License along with this source; if not, download it   ---- 
+---- from http://www.opencores.org/lgpl.shtml                     ---- 
+----                                                              ---- 
+----------------------------------------------------------------------
+----------------------------------------------------------------------
+-- This file is owned and controlled by Xilinx and must be used     --
+-- solely for design, simulation, implementation and creation of    --
+-- design files limited to Xilinx devices or technologies. Use      --
+-- with non-Xilinx devices or technologies is expressly prohibited  --
+-- and immediately terminates your license.                         --
+--                                                                  --
+-- XILINX IS PROVIDING THIS DESIGN, CODE, OR INFORMATION "AS IS"    --
+-- SOLELY FOR USE IN DEVELOPING PROGRAMS AND SOLUTIONS FOR          --
+-- XILINX DEVICES.  BY PROVIDING THIS DESIGN, CODE, OR INFORMATION  --
+-- AS ONE POSSIBLE IMPLEMENTATION OF THIS FEATURE, APPLICATION      --
+-- OR STANDARD, XILINX IS MAKING NO REPRESENTATION THAT THIS        --
+-- IMPLEMENTATION IS FREE FROM ANY CLAIMS OF INFRINGEMENT,          --
+-- AND YOU ARE RESPONSIBLE FOR OBTAINING ANY RIGHTS YOU MAY REQUIRE --
+-- FOR YOUR IMPLEMENTATION.  XILINX EXPRESSLY DISCLAIMS ANY         --
+-- WARRANTY WHATSOEVER WITH RESPECT TO THE ADEQUACY OF THE          --
+-- IMPLEMENTATION, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OR   --
+-- REPRESENTATIONS THAT THIS IMPLEMENTATION IS FREE FROM CLAIMS OF  --
+-- INFRINGEMENT, IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS  --
+-- FOR A PARTICULAR PURPOSE.                                        --
+--                                                                  --
+-- Xilinx products are not intended for use in life support         --
+-- appliances, devices, or systems. Use in such applications are    --
+-- expressly prohibited.                                            --
+--                                                                  --
+-- (c) Copyright 1995-2009 Xilinx, Inc.                             --
+-- All rights reserved.                                             --
+----------------------------------------------------------------------
 -- You must compile the wrapper file operand_dp.vhd when simulating
 -- the core, operand_dp. When compiling the wrapper file, be sure to
 -- reference the XilinxCoreLib VHDL simulation library. For detailed
@@ -35,40 +79,46 @@
 -- below are supported by Xilinx, Mentor Graphics and Synplicity
 -- synthesis tools. Ensure they are correct for your synthesis tool(s).
 
-LIBRARY ieee;
-USE ieee.std_logic_1164.ALL;
--- synthesis translate_off
-Library XilinxCoreLib;
--- synthesis translate_on
-ENTITY operand_dp IS
-	port (
-	clka: IN std_logic;
-	wea: IN std_logic_VECTOR(0 downto 0);
-	addra: IN std_logic_VECTOR(5 downto 0);
-	dina: IN std_logic_VECTOR(31 downto 0);
-	douta: OUT std_logic_VECTOR(511 downto 0);
-	clkb: IN std_logic;
-	web: IN std_logic_VECTOR(0 downto 0);
-	addrb: IN std_logic_VECTOR(5 downto 0);
-	dinb: IN std_logic_VECTOR(511 downto 0);
-	doutb: OUT std_logic_VECTOR(31 downto 0));
-END operand_dp;
 
-ARCHITECTURE operand_dp_a OF operand_dp IS
+library ieee;
+use ieee.std_logic_1164.ALL;
 -- synthesis translate_off
-component wrapped_operand_dp
-	port (
-	clka: IN std_logic;
-	wea: IN std_logic_VECTOR(0 downto 0);
-	addra: IN std_logic_VECTOR(5 downto 0);
-	dina: IN std_logic_VECTOR(31 downto 0);
-	douta: OUT std_logic_VECTOR(511 downto 0);
-	clkb: IN std_logic;
-	web: IN std_logic_VECTOR(0 downto 0);
-	addrb: IN std_logic_VECTOR(5 downto 0);
-	dinb: IN std_logic_VECTOR(511 downto 0);
-	doutb: OUT std_logic_VECTOR(31 downto 0));
-end component;
+library XilinxCoreLib;
+-- synthesis translate_on
+
+
+entity operand_dp is
+  port (
+    clka  : in std_logic;
+    wea   : in std_logic_vector(0 downto 0);
+    addra : in std_logic_vector(5 downto 0);
+    dina  : in std_logic_vector(31 downto 0);
+    douta : out std_logic_vector(511 downto 0);
+    clkb  : in std_logic;
+    web   : in std_logic_vector(0 downto 0);
+    addrb : in std_logic_vector(5 downto 0);
+    dinb  : in std_logic_vector(511 downto 0);
+    doutb : out std_logic_vector(31 downto 0)
+  );
+end operand_dp;
+
+
+architecture operand_dp_a of operand_dp is
+-- synthesis translate_off
+  component wrapped_operand_dp
+    port (
+      clka  : in std_logic;
+      wea   : in std_logic_vector(0 downto 0);
+      addra : in std_logic_vector(5 downto 0);
+      dina  : in std_logic_vector(31 downto 0);
+      douta : out std_logic_vector(511 downto 0);
+      clkb  : in std_logic;
+      web   : in std_logic_vector(0 downto 0);
+      addrb : in std_logic_vector(5 downto 0);
+      dinb  : in std_logic_vector(511 downto 0);
+      doutb : out std_logic_vector(31 downto 0)
+    );
+  end component;
 
 -- Configuration specification 
 	for all : wrapped_operand_dp use entity XilinxCoreLib.blk_mem_gen_v3_3(behavioral)
@@ -122,23 +172,24 @@ end component;
 			c_use_byte_wea => 0,
 			c_rst_priority_b => "CE",
 			c_rst_priority_a => "CE",
-			c_use_default_data => 0);
+			c_use_default_data => 0
+		);
 -- synthesis translate_on
-BEGIN
+begin
 -- synthesis translate_off
-U0 : wrapped_operand_dp
-		port map (
-			clka => clka,
-			wea => wea,
-			addra => addra,
-			dina => dina,
-			douta => douta,
-			clkb => clkb,
-			web => web,
-			addrb => addrb,
-			dinb => dinb,
-			doutb => doutb);
+  U0 : wrapped_operand_dp
+  port map (
+    clka  => clka,
+    wea   => wea,
+    addra => addra,
+    dina  => dina,
+    douta => douta,
+    clkb  => clkb,
+    web   => web,
+    addrb => addrb,
+    dinb  => dinb,
+    doutb => doutb
+  );
 -- synthesis translate_on
 
-END operand_dp_a;
-
+end operand_dp_a;

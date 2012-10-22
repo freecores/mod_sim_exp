@@ -1,54 +1,69 @@
------------------------------------------------------------------------------------- 
---			
--- Geoffrey Ottoy - DraMCo research group
---
--- Module Name:	cell_1b_adder.vhd / entity cell_1b_adder
--- 
--- Last Modified:	18/11/2011 
--- 
--- Description: 	full adder for use in the montgommery multiplier systolic array
---						currently a behavioral description
---
---
--- Dependencies: 	none
---
--- Revision:
--- Revision 2.00 - Major error resolved (carry & sum output were switched)
---	Revision 1.00 - Architecture
---	Revision 0.01 - File Created
---
---
-------------------------------------------------------------------------------------
---
--- NOTICE:
---
--- Copyright DraMCo research group. 2011. This code may be contain portions patented
--- by other third parties!
---
-------------------------------------------------------------------------------------
-library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;
-use IEEE.STD_LOGIC_ARITH.ALL;
-use IEEE.STD_LOGIC_UNSIGNED.ALL;
+----------------------------------------------------------------------  
+----  cell_1b_adder                                               ---- 
+----                                                              ---- 
+----  This file is part of the                                    ----
+----    Modular Simultaneous Exponentiation Core project          ---- 
+----    http://www.opencores.org/cores/mod_sim_exp/               ---- 
+----                                                              ---- 
+----  Description                                                 ---- 
+----    This file contains the implementation of a 1-bit full     ----
+----    adder cell using logic gates                              ----
+----    used in adder_block                                       ----
+----                                                              ----
+----  Dependencies: none                                          ----
+----                                                              ---- 
+----  Authors:                                                    ----
+----      - Geoffrey Ottoy, DraMCo research group                 ----
+----      - Jonas De Craene, JonasDC@opencores.org                ---- 
+----                                                              ---- 
+---------------------------------------------------------------------- 
+----                                                              ---- 
+---- Copyright (C) 2011 DraMCo research group and OPENCORES.ORG   ---- 
+----                                                              ---- 
+---- This source file may be used and distributed without         ---- 
+---- restriction provided that this copyright statement is not    ---- 
+---- removed from the file and that any derivative work contains  ---- 
+---- the original copyright notice and the associated disclaimer. ---- 
+----                                                              ---- 
+---- This source file is free software; you can redistribute it   ---- 
+---- and/or modify it under the terms of the GNU Lesser General   ---- 
+---- Public License as published by the Free Software Foundation; ---- 
+---- either version 2.1 of the License, or (at your option) any   ---- 
+---- later version.                                               ---- 
+----                                                              ---- 
+---- This source is distributed in the hope that it will be       ---- 
+---- useful, but WITHOUT ANY WARRANTY; without even the implied   ---- 
+---- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR      ---- 
+---- PURPOSE.  See the GNU Lesser General Public License for more ---- 
+---- details.                                                     ---- 
+----                                                              ---- 
+---- You should have received a copy of the GNU Lesser General    ---- 
+---- Public License along with this source; if not, download it   ---- 
+---- from http://www.opencores.org/lgpl.shtml                     ---- 
+----                                                              ---- 
+----------------------------------------------------------------------
 
----- Uncomment the following library declaration if instantiating
----- any Xilinx primitives in this code.
---library UNISIM;
---use UNISIM.VComponents.all;
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.std_logic_arith.all;
+use ieee.std_logic_unsigned.all;
+
 
 entity cell_1b_adder is
-    Port ( a : in  STD_LOGIC;
-           mux_result : in  STD_LOGIC;
-           cin : in  STD_LOGIC;
-           cout : out  STD_LOGIC;
-           r : out  STD_LOGIC);
+  port (
+    a          : in  std_logic;
+    mux_result : in  std_logic;
+    cin        : in  std_logic;
+    cout       : out  std_logic;
+    r          : out  std_logic
+  );
 end cell_1b_adder;
 
-architecture Behavioral of cell_1b_adder is
-	signal a_xor_mux_result: std_logic;
-begin
-	a_xor_mux_result <= a xor mux_result;
-	r <= a_xor_mux_result xor cin;
-	cout <= (a and mux_result) or (cin and a_xor_mux_result);
-end Behavioral;
 
+architecture Behavioral of cell_1b_adder is
+  signal a_xor_mux_result : std_logic;
+begin
+  a_xor_mux_result <= a xor mux_result;
+  r <= a_xor_mux_result xor cin;
+  cout <= (a and mux_result) or (cin and a_xor_mux_result);
+end Behavioral;

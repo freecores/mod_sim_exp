@@ -1,60 +1,76 @@
------------------------------------------------------------------------------------- 
---			
--- Geoffrey Ottoy - DraMCo research group
---
--- Module Name:	x_shift_reg.vhd / entity x_shift_reg
--- 
--- Last Modified:	18/06/2012 
--- 
--- Description: 	n-bit shift register with lsb output
---
---
--- Dependencies: 	none
---
--- Revision:
---	Revision 1.00 - Architecture
---	Revision 0.01 - File Created
---
---
-------------------------------------------------------------------------------------
---
--- NOTICE:
---
--- Copyright DraMCo research group. 2011. This code may be contain portions patented
--- by other third parties!
---
-------------------------------------------------------------------------------------
-library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;
-use IEEE.STD_LOGIC_ARITH.ALL;
-use IEEE.STD_LOGIC_UNSIGNED.ALL;
+----------------------------------------------------------------------  
+----  x_shift_reg                                                 ---- 
+----                                                              ---- 
+----  This file is part of the                                    ----
+----    Modular Simultaneous Exponentiation Core project          ---- 
+----    http://www.opencores.org/cores/mod_sim_exp/               ---- 
+----                                                              ---- 
+----  Description                                                 ---- 
+----    1536 bit shift register with lsb output                   ----
+----                                                              ---- 
+----  Dependencies: none                                          ----
+----                                                              ----
+----  Authors:                                                    ----
+----      - Geoffrey Ottoy, DraMCo research group                 ----
+----      - Jonas De Craene, JonasDC@opencores.org                ---- 
+----                                                              ---- 
+---------------------------------------------------------------------- 
+----                                                              ---- 
+---- Copyright (C) 2011 DraMCo research group and OPENCORES.ORG   ---- 
+----                                                              ---- 
+---- This source file may be used and distributed without         ---- 
+---- restriction provided that this copyright statement is not    ---- 
+---- removed from the file and that any derivative work contains  ---- 
+---- the original copyright notice and the associated disclaimer. ---- 
+----                                                              ---- 
+---- This source file is free software; you can redistribute it   ---- 
+---- and/or modify it under the terms of the GNU Lesser General   ---- 
+---- Public License as published by the Free Software Foundation; ---- 
+---- either version 2.1 of the License, or (at your option) any   ---- 
+---- later version.                                               ---- 
+----                                                              ---- 
+---- This source is distributed in the hope that it will be       ---- 
+---- useful, but WITHOUT ANY WARRANTY; without even the implied   ---- 
+---- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR      ---- 
+---- PURPOSE.  See the GNU Lesser General Public License for more ---- 
+---- details.                                                     ---- 
+----                                                              ---- 
+---- You should have received a copy of the GNU Lesser General    ---- 
+---- Public License along with this source; if not, download it   ---- 
+---- from http://www.opencores.org/lgpl.shtml                     ---- 
+----                                                              ---- 
+----------------------------------------------------------------------
 
----- Uncomment the following library declaration if instantiating
----- any Xilinx primitives in this code.
---library UNISIM;
---use UNISIM.VComponents.all;
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.std_logic_arith.all;
+use ieee.std_logic_unsigned.all;
+
 
 entity x_shift_reg is
-	generic(  n : integer := 1536;
-		       t : integer := 48;
-				tl : integer := 16
-	);
-	port(   clk : in  STD_LOGIC;
-         reset : in  STD_LOGIC;
-          x_in : in  STD_LOGIC_VECTOR((n-1) downto 0);
-        load_x : in  STD_LOGIC;
-        next_x : in  STD_LOGIC;
-		   p_sel : in  STD_LOGIC_VECTOR(1 downto 0);
-           x_i : out  STD_LOGIC
-	);
+  generic(
+    n  : integer := 1536;
+    t  : integer := 48;
+    tl : integer := 16
+  );
+  port(
+    clk    : in  std_logic;
+    reset  : in  std_logic;
+    x_in   : in  std_logic_vector((n-1) downto 0);
+    load_x : in  std_logic;
+    next_x : in  std_logic;
+    p_sel  : in  std_logic_vector(1 downto 0);
+    x_i    : out std_logic
+  );
 end x_shift_reg;
 
+
 architecture Behavioral of x_shift_reg is
-	signal x_reg_i : std_logic_vector((n-1) downto 0); -- register
-	constant s : integer := n/t;   -- nr of stages
-	constant offset : integer := s*tl; -- calculate startbit pos of higher part of pipeline
+  signal x_reg_i  : std_logic_vector((n-1) downto 0); -- register
+  constant s      : integer := n/t;   -- nr of stages
+  constant offset : integer := s*tl;  -- calculate startbit pos of higher part of pipeline
 begin
-	
+
 	REG_PROC: process(reset, clk)
 	begin
 		if reset = '1' then -- Reset, clear the register
@@ -71,8 +87,7 @@ begin
 	end process;
 
 	with p_sel select  -- pipeline select
-		x_i <= x_reg_i(offset) when "10",   -- use bit at offset for high part of pipeline
-				 x_reg_i(0) when others;    -- use LS bit for lower part of pipeline
+		x_i <= x_reg_i(offset) when "10", -- use bit at offset for high part of pipeline
+				   x_reg_i(0) when others;    -- use LS bit for lower part of pipeline
 
 end Behavioral;
-

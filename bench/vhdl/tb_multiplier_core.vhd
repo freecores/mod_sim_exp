@@ -1,10 +1,50 @@
---------------------------------------------------------------------------------
--- Entity: tb_multiplier_core
--- Date:2012-10-02  
--- Author: Dinghe     
---
--- Description ${cursor}
---------------------------------------------------------------------------------
+----------------------------------------------------------------------  
+----  testbenchtrl                                                ---- 
+----                                                              ---- 
+----  This file is part of the                                    ----
+----    Modular Simultaneous Exponentiation Core project          ---- 
+----    http://www.opencores.org/cores/mod_sim_exp/               ---- 
+----                                                              ---- 
+----  Description                                                 ---- 
+----    testbench for the modular simultaneous exponentiation     ----
+----    core. Performs some exponentiations to verify the design  ----
+----    Takes input parameters from sim_input.txt en writes       ----
+----    result and output to sim_output.txt                       ----
+----                                                              ----
+----  Dependencies:                                               ----
+----    - multiplier_core                                         ----
+----                                                              ----
+----  Authors:                                                    ----
+----      - Geoffrey Ottoy, DraMCo research group                 ----
+----      - Jonas De Craene, JonasDC@opencores.org                ---- 
+----                                                              ---- 
+---------------------------------------------------------------------- 
+----                                                              ---- 
+---- Copyright (C) 2011 DraMCo research group and OPENCORES.ORG   ---- 
+----                                                              ---- 
+---- This source file may be used and distributed without         ---- 
+---- restriction provided that this copyright statement is not    ---- 
+---- removed from the file and that any derivative work contains  ---- 
+---- the original copyright notice and the associated disclaimer. ---- 
+----                                                              ---- 
+---- This source file is free software; you can redistribute it   ---- 
+---- and/or modify it under the terms of the GNU Lesser General   ---- 
+---- Public License as published by the Free Software Foundation; ---- 
+---- either version 2.1 of the License, or (at your option) any   ---- 
+---- later version.                                               ---- 
+----                                                              ---- 
+---- This source is distributed in the hope that it will be       ---- 
+---- useful, but WITHOUT ANY WARRANTY; without even the implied   ---- 
+---- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR      ---- 
+---- PURPOSE.  See the GNU Lesser General Public License for more ---- 
+---- details.                                                     ---- 
+----                                                              ---- 
+---- You should have received a copy of the GNU Lesser General    ---- 
+---- Public License along with this source; if not, download it   ---- 
+---- from http://www.opencores.org/lgpl.shtml                     ---- 
+----                                                              ---- 
+----------------------------------------------------------------------
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
@@ -16,6 +56,9 @@ use std.textio.all;
 library ieee;
 use ieee.std_logic_textio.all;
 
+library mod_sim_exp;
+use mod_sim_exp.mod_sim_exp_pkg.all;
+
 entity tb_multiplier_core is
 end tb_multiplier_core;
 
@@ -24,8 +67,8 @@ architecture test of tb_multiplier_core is
   constant clk_period : time := 10 ns;
   signal clk          : std_logic := '0';
   signal reset        : std_logic := '1';
-  file input          : text open read_mode is "sim_input.txt";
-  file output         : text open write_mode is "sim_output.txt";
+  file input          : text open read_mode is "src/sim_input.txt";
+  file output         : text open write_mode is "out/sim_output.txt";
   
   ------------------------------------------------------------------
   -- Signals for multiplier core memory space
@@ -53,34 +96,6 @@ architecture test of tb_multiplier_core is
   signal core_fifo_nopush : std_logic;
   signal core_ready       : std_logic;
   signal core_mem_collision : std_logic;
-
-  component multiplier_core is
-    port(
-      clk : in  std_logic;
-      reset : in  std_logic;
-          -- operand memory interface (plb shared memory)
-      write_enable : in  std_logic;
-      data_in : in  std_logic_vector (31 downto 0);
-      rw_address : in  std_logic_vector (8 downto 0);
-      data_out : out std_logic_vector (31 downto 0);
-      collision : out std_logic;
-          -- op_sel fifo interface
-      fifo_din : in  std_logic_vector (31 downto 0);
-      fifo_push : in  std_logic;
-      fifo_full : out std_logic;
-      fifo_nopush : out std_logic;
-          -- ctrl signals
-      start : in  std_logic;
-      run_auto : in  std_logic;
-      ready : out std_logic;
-      x_sel_single : in  std_logic_vector (1 downto 0);
-      y_sel_single : in  std_logic_vector (1 downto 0);
-      dest_op_single : in  std_logic_vector (1 downto 0);
-      p_sel : in  std_logic_vector (1 downto 0);
-      calc_time : out std_logic
-    );
-  end component;
-
 
 begin
 
@@ -137,7 +152,6 @@ stim_proc : process
     core_write_enable <= '0';
     wait until rising_edge(clk);
   end loadOp;
-  
   
   procedure readOp(constant op_sel : std_logic_vector(2 downto 0);
                   variable op_data  : out std_logic_vector(2047 downto 0);
@@ -537,7 +551,7 @@ begin
           wait until rising_edge(clk);
         end loop;
         waitclk(10);
-        write(Lw, string'("  Done"));
+        write(Lw, string'("  => Done"));
         writeline(output, Lw);
         
         -- start exponentiation
@@ -641,7 +655,7 @@ end process;
 ------------------------------------------
 -- Multiplier core instance
 ------------------------------------------
-the_multiplier : multiplier_core
+the_multiplier : mod_sim_exp.mod_sim_exp_pkg.multiplier_core
 port map(
   clk   => clk,
   reset => reset,
@@ -667,6 +681,4 @@ port map(
   calc_time      => calc_time
 );
 
-
 end test;
-

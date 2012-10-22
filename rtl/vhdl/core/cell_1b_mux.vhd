@@ -1,60 +1,74 @@
------------------------------------------------------------------------------------- 
---			
--- Geoffrey Ottoy - DraMCo research group
---
--- Module Name:	cell_1b_mux.vhd / entity cell_1b_mux
--- 
--- Last Modified:	14/11/2011 
--- 
--- Description: 	mux for use in the montgommery multiplier systolic array
---						currently a behavioral description
---
---
--- Dependencies: 	none
---
--- Revision:
---	Revision 1.00 - Architecture
---	Revision 0.01 - File Created
---
---
-------------------------------------------------------------------------------------
---
--- NOTICE:
---
--- Copyright DraMCo research group. 2011. This code may be contain portions patented
--- by other third parties!
---
-------------------------------------------------------------------------------------
-library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;
-use IEEE.STD_LOGIC_ARITH.ALL;
-use IEEE.STD_LOGIC_UNSIGNED.ALL;
+----------------------------------------------------------------------  
+----  cel_1b_mux                                                  ---- 
+----                                                              ---- 
+----  This file is part of the                                    ----
+----    Modular Simultaneous Exponentiation Core project          ---- 
+----    http://www.opencores.org/cores/mod_sim_exp/               ---- 
+----                                                              ---- 
+----  Description                                                 ---- 
+----    mux for use in the montgommery multiplier systolic array  ----
+----                                                              ---- 
+----  Dependencies: none                                          ---- 
+----                                                              ---- 
+----  Authors:                                                    ----
+----      - Geoffrey Ottoy, DraMCo research group                 ----
+----      - Jonas De Craene, JonasDC@opencores.org                ---- 
+----                                                              ---- 
+---------------------------------------------------------------------- 
+----                                                              ---- 
+---- Copyright (C) 2011 DraMCo research group and OPENCORES.ORG   ---- 
+----                                                              ---- 
+---- This source file may be used and distributed without         ---- 
+---- restriction provided that this copyright statement is not    ---- 
+---- removed from the file and that any derivative work contains  ---- 
+---- the original copyright notice and the associated disclaimer. ---- 
+----                                                              ---- 
+---- This source file is free software; you can redistribute it   ---- 
+---- and/or modify it under the terms of the GNU Lesser General   ---- 
+---- Public License as published by the Free Software Foundation; ---- 
+---- either version 2.1 of the License, or (at your option) any   ---- 
+---- later version.                                               ---- 
+----                                                              ---- 
+---- This source is distributed in the hope that it will be       ---- 
+---- useful, but WITHOUT ANY WARRANTY; without even the implied   ---- 
+---- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR      ---- 
+---- PURPOSE.  See the GNU Lesser General Public License for more ---- 
+---- details.                                                     ---- 
+----                                                              ---- 
+---- You should have received a copy of the GNU Lesser General    ---- 
+---- Public License along with this source; if not, download it   ---- 
+---- from http://www.opencores.org/lgpl.shtml                     ---- 
+----                                                              ---- 
+----------------------------------------------------------------------
 
----- Uncomment the following library declaration if instantiating
----- any Xilinx primitives in this code.
---library UNISIM;
---use UNISIM.VComponents.all;
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.std_logic_arith.all;
+use ieee.std_logic_unsigned.all;
+
 
 entity cell_1b_mux is
-    Port ( my : in  STD_LOGIC;
-           y : in  STD_LOGIC;
-           m : in  STD_LOGIC;
-           x : in  STD_LOGIC;
-           q : in  STD_LOGIC;
-           result : out  STD_LOGIC);
+  port (
+    my     : in  std_logic;
+    y      : in  std_logic;
+    m      : in  std_logic;
+    x      : in  std_logic;
+    q      : in  std_logic;
+    result : out std_logic
+  );
 end cell_1b_mux;
 
+
 architecture Behavioral of cell_1b_mux is
-	signal sel : std_logic_vector(1 downto 0);
+  signal sel : std_logic_vector(1 downto 0);
 begin
-	
-	sel <= x & q;
-	
-	with sel select
-		result <= my when "11",
-		          y when "10",
-					 m when "01",
-					 '0' when others;
+
+  sel <= x & q;
+
+  with sel select
+    result <=  my when "11",
+                y when "10",
+                m when "01",
+              '0' when others;
 
 end Behavioral;
-
