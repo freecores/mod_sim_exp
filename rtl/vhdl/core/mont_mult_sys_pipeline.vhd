@@ -128,7 +128,7 @@ begin
     b        => xy((bits_l-1) downto 0),
     cin      => '0',
     cout     => my_l_cout,
-    s        => my((bits_l-1) downto 0)
+    r        => my((bits_l-1) downto 0)
   );
 	
   my_adder_h : adder_n
@@ -142,7 +142,7 @@ begin
     b        => xy((n-1) downto bits_l),
     cin      => my_h_cin,
     cout     => my(n),
-    s        => my((n-1) downto bits_l)
+    r        => my((n-1) downto bits_l)
   );
 
 	my_h_cin <= '0' when (p_sel(1) and (not p_sel(0)))='1' else my_l_cout;
@@ -192,24 +192,24 @@ begin
     b        => r_pipeline((bits_l-1) downto 0),
     cin      => '1',
     cout     => c_red_l(0),
-    s        => r_red((bits_l-1) downto 0)
+    r        => r_red((bits_l-1) downto 0)
   );
 
   reduction_adder_l_a : cell_1b_adder
   port map(
-    a          => '1',
-    mux_result => r_pipeline(bits_l),
-    cin        => c_red_l(0),
-    cout       => c_red_l(1)
+    a    => '1',
+    b    => r_pipeline(bits_l),
+    cin  => c_red_l(0),
+    cout => c_red_l(1)
     --r => 
   );
 
   reduction_adder_l_b : cell_1b_adder
   port map(
-    a          => '1',
-    mux_result => r_pipeline(bits_l+1),
-    cin        => c_red_l(1),
-    cout       => c_red_l(2)
+    a     => '1',
+    b     => r_pipeline(bits_l+1),
+    cin   => c_red_l(1),
+    cout  => c_red_l(2)
     -- r => 
   );
 	
@@ -227,25 +227,25 @@ begin
     b        => r_pipeline((n-1) downto bits_l),
     cin      => cin_red_h,
     cout     => c_red_h(0),
-    s        => r_red((n-1) downto bits_l)
+    r        => r_red((n-1) downto bits_l)
   );
 
   reduction_adder_h_a : cell_1b_adder
   port map(
-    a          => '1',
-    mux_result => r_pipeline(n),
-    cin        => c_red_h(0),
-    cout       => c_red_h(1)
+    a     => '1',
+    b     => r_pipeline(n),
+    cin   => c_red_h(0),
+    cout  => c_red_h(1)
   );
 
   reduction_adder_h_b : cell_1b_adder
   port map(
-    a          => '1',
-    mux_result => r_pipeline(n+1),
-    cin        => c_red_h(1),
-    cout       => c_red_h(2)
+    a     => '1',
+    b     => r_pipeline(n+1),
+    cin   => c_red_h(1),
+    cout  => c_red_h(2)
   );
-
+  
 	r_sel <= (c_red_h(2) and p_sel(1)) or (c_red_l(2) and (p_sel(0) and (not p_sel(1))));
 	r_i <= r_red when r_sel = '1' else r_pipeline((n-1) downto 0);
 	
