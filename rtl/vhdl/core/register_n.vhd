@@ -6,7 +6,7 @@
 ----    http://www.opencores.org/cores/mod_sim_exp/               ---- 
 ----                                                              ---- 
 ----  Description                                                 ---- 
-----    n bit register                                            ----
+----    n bit register with active high asynchronious reset and ce----
 ----    used in montgommery multiplier systolic array stages      ----            
 ----                                                              ---- 
 ----  Dependencies: none                                          ----
@@ -47,43 +47,35 @@ use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
 use ieee.std_logic_unsigned.all;
 
--- Xilinx primitives used
-library UNISIM;
-use UNISIM.VComponents.all;
-
-
+-- n-bit register with asynchronous reset and clock enable
 entity register_n is
   generic(
     n : integer := 4
   );
   port(
-    core_clk : in  std_logic;
-    ce       : in  std_logic;
-    reset    : in  std_logic;
-    din      : in  std_logic_vector((n-1) downto 0);
-    dout     : out std_logic_vector((n-1) downto 0)
+    core_clk : in  std_logic; -- clock input
+    ce       : in  std_logic; -- clock enable (active high)
+    reset    : in  std_logic; -- reset (active high)
+    din      : in  std_logic_vector((n-1) downto 0);  -- data in (n-bit)
+    dout     : out std_logic_vector((n-1) downto 0)   -- data out (n-bit)
   );
 end register_n;
 
 
-architecture Structural of register_n is
-	signal dout_i : std_logic_vector((n-1) downto 0) := (others => '0');
+architecture Behavorial of register_n is
 begin
-	
-	dout <= dout_i;
-	
-  N_REGS : for i in 0 to n-1 generate
-    FDCE_inst : FDCE
-    generic map (
-      INIT => '0'       -- Initial value of latch ('0' or '1')
-    )
-    port map (
-      Q   => dout_i(i), -- Data output
-      CLR => reset,     -- Asynchronous clear/reset input
-      D   => din(i),    -- Data input
-      C   => core_clk,  -- Gate input
-      CE  => ce         -- Gate enable input
-    );
-  end generate;
-	
-end Structural;
+	 -- process for n-bit register
+  reg_nb : process (reset, ce, core_clk, din)
+  begin
+    if reset='1' then -- asynchronous active high reset
+      dout <= (others=>'0');
+    else
+      if rising_edge(core_clk) then -- clock in data on rising edge
+        if ce='1' then  -- active high clock enable to clock in data
+          dout <= din;
+        end if;
+      end if;
+    end if;
+  end process; 
+
+end Behavorial;
