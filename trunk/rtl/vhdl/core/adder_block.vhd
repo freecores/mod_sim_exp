@@ -6,7 +6,8 @@
 ----    http://www.opencores.org/cores/mod_sim_exp/               ---- 
 ----                                                              ---- 
 ----  Description                                                 ---- 
-----    Adder block with a flipflop for the carry out             ----
+----    Adder block with a flipflop for the carry out so result   ----
+----    is available after 1 clock cycle                          ----
 ----    for use in the montgommery multiplier pre and post        ----
 ----    computation adders                                        ----
 ----                                                              ----
@@ -54,7 +55,7 @@ library mod_sim_exp;
 use mod_sim_exp.mod_sim_exp_pkg.all;
 
 -- (width)-bit full adder block using cell_1b_adders
--- with buffered carry out
+-- with buffered carry out -> result after 1 clock cycle
 entity adder_block is
   generic (
     width : integer := 32 --adder operand widths
@@ -75,7 +76,7 @@ end adder_block;
 
 
 architecture Structural of adder_block is
-  -- array for the carry bits
+  -- vector for the carry bits
   signal carry : std_logic_vector(width downto 0);
 begin
   -- carry in
