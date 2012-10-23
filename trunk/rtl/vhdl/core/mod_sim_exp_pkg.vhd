@@ -1,38 +1,179 @@
+----------------------------------------------------------------------  
+----  mod_sim_exp_pkg                                             ---- 
+----                                                              ---- 
+----  This file is part of the                                    ----
+----    Modular Simultaneous Exponentiation Core project          ---- 
+----    http://www.opencores.org/cores/mod_sim_exp/               ---- 
+----                                                              ---- 
+----  Description                                                 ---- 
+----    Package for the Modular Simultaneous Exponentiation Core  ----
+----    Project. Contains the component declarations and used     ----
+----    constants.                                                ----
+----                                                              ---- 
+----  Dependencies: none                                          ---- 
+----                                                              ---- 
+----  Authors:                                                    ----
+----      - Geoffrey Ottoy, DraMCo research group                 ----
+----      - Jonas De Craene, JonasDC@opencores.org                ---- 
+----                                                              ---- 
+---------------------------------------------------------------------- 
+----                                                              ---- 
+---- Copyright (C) 2011 DraMCo research group and OPENCORES.ORG   ---- 
+----                                                              ---- 
+---- This source file may be used and distributed without         ---- 
+---- restriction provided that this copyright statement is not    ---- 
+---- removed from the file and that any derivative work contains  ---- 
+---- the original copyright notice and the associated disclaimer. ---- 
+----                                                              ---- 
+---- This source file is free software; you can redistribute it   ---- 
+---- and/or modify it under the terms of the GNU Lesser General   ---- 
+---- Public License as published by the Free Software Foundation; ---- 
+---- either version 2.1 of the License, or (at your option) any   ---- 
+---- later version.                                               ---- 
+----                                                              ---- 
+---- This source is distributed in the hope that it will be       ---- 
+---- useful, but WITHOUT ANY WARRANTY; without even the implied   ---- 
+---- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR      ---- 
+---- PURPOSE.  See the GNU Lesser General Public License for more ---- 
+---- details.                                                     ---- 
+----                                                              ---- 
+---- You should have received a copy of the GNU Lesser General    ---- 
+---- Public License along with this source; if not, download it   ---- 
+---- from http://www.opencores.org/lgpl.shtml                     ---- 
+----                                                              ---- 
+----------------------------------------------------------------------
 
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 
+
 package mod_sim_exp_pkg is
   
-  component adder_n is
-    generic (
-      width       : integer := 1536;
-      block_width : integer := 8
+  -- 1-bit D flip-flop with asynchronous active high reset
+  component d_flip_flop is
+    port(
+      core_clk : in  std_logic; -- clock signal
+      reset    : in  std_logic; -- active high reset
+      din      : in  std_logic; -- data in
+      dout     : out std_logic  -- data out
     );
-    port (
-      core_clk : in std_logic;
-      a        : in std_logic_vector((width-1) downto 0);
-      b        : in std_logic_vector((width-1) downto 0);
-      cin      : in std_logic;
-      cout     : out std_logic;
-      s        : out std_logic_vector((width-1) downto 0)
-    );
-  end component adder_n;
+  end component d_flip_flop;
   
+  -- 1-bit register with asynchronous reset and clock enable
+  component register_1b is
+    port(
+      core_clk : in  std_logic; -- clock input
+      ce       : in  std_logic; -- clock enable (active high)
+      reset    : in  std_logic; -- reset (active high)
+      din      : in  std_logic; -- data in
+      dout     : out std_logic  -- data out
+    );
+  end component register_1b;
+  
+  -- n-bit register with asynchronous reset and clock enable
+  component register_n is
+    generic(
+      n : integer := 4
+    );
+    port(
+      core_clk : in  std_logic; -- clock input
+      ce       : in  std_logic; -- clock enable (active high)
+      reset    : in  std_logic; -- reset (active high)
+      din      : in  std_logic_vector((n-1) downto 0);  -- data in (n-bit)
+      dout     : out std_logic_vector((n-1) downto 0)   -- data out (n-bit)
+    );
+  end component register_n;
+  
+  -- 1-bit full adder cell
+  component cell_1b_adder is
+    port (
+      -- input operands a, b
+      a    : in  std_logic;
+      b    : in  std_logic;
+      -- carry in, out
+      cin  : in  std_logic;
+      cout : out  std_logic;
+      -- result out
+      r    : out  std_logic
+    );
+  end component cell_1b_adder;
+  
+  -- 1-bit mux for a standard cell in the montgommery multiplier systolic array
+  component cell_1b_mux is
+    port (
+      -- input bits
+      my     : in  std_logic; 
+      y      : in  std_logic;
+      m      : in  std_logic;
+      -- selection bits
+      x      : in  std_logic;
+      q      : in  std_logic;
+      -- mux out
+      result : out std_logic
+    );
+  end component cell_1b_mux;
+  
+  -- 1-bit cell for the systolic array
+  component cell_1b is
+    port (
+      -- operand input bits (m+y, y and m)
+      my   : in  std_logic;
+      y    : in  std_logic;
+      m    : in  std_logic;
+      -- operand x input bit and q (serial)
+      x    : in  std_logic;
+      q    : in  std_logic;
+      -- previous result input bit
+      a    : in  std_logic;
+      -- carry's
+      cin  : in  std_logic;
+      cout : out std_logic;
+      -- cell result out
+      r    : out std_logic
+    );
+  end component cell_1b;
+  
+  -- (width)-bit full adder block using cell_1b_adders
+  -- with buffered carry out
   component adder_block is
     generic (
-      width : integer := 32
+      width : integer := 32 --adder operand widths
     );
     port (
-      core_clk : in std_logic;
-      a        : in  std_logic_vector((width-1) downto 0);
-      b        : in  std_logic_vector((width-1) downto 0);
-      cin      : in std_logic;
-      cout     : out std_logic;
-      s        : out  std_logic_vector((width-1) downto 0)
+      -- clock input
+      core_clk : in std_logic; 
+      -- adder input operands a, b (width)-bit
+      a : in std_logic_vector((width-1) downto 0);
+      b : in std_logic_vector((width-1) downto 0);
+      -- carry in, out
+      cin   : in std_logic;
+      cout  : out std_logic;
+      -- adder result out (width)-bit
+      r : out std_logic_vector((width-1) downto 0) 
     );
   end component adder_block;
+  
+  -- n-bit adder using adder blocks. works in stages, to prevent large 
+  -- carry propagation
+  component adder_n is
+    generic (
+      width       : integer := 1536; -- adder operands width
+      block_width : integer := 8     -- adder blocks size
+    );
+    port (
+      -- clock input
+      core_clk : in std_logic;  
+      -- adder input operands (width)-bit
+      a : in std_logic_vector((width-1) downto 0);
+      b : in std_logic_vector((width-1) downto 0);
+      -- carry in, out
+      cin   : in std_logic;
+      cout  : out std_logic;
+      -- adder output result (width)-bit
+      r : out std_logic_vector((width-1) downto 0) 
+    );
+  end component adder_n;
   
   component autorun_cntrl is
     port (
@@ -49,41 +190,6 @@ package mod_sim_exp_pkg is
     );
   end component autorun_cntrl;
   
-  component cell_1b_adder is
-    port (
-      a          : in  std_logic;
-      mux_result : in  std_logic;
-      cin        : in  std_logic;
-      cout       : out  std_logic;
-      r          : out  std_logic
-    );
-  end component cell_1b_adder;
-  
-  component cell_1b_mux is
-    port (
-      my     : in  std_logic;
-      y      : in  std_logic;
-      m      : in  std_logic;
-      x      : in  std_logic;
-      q      : in  std_logic;
-      result : out std_logic
-    );
-  end component cell_1b_mux;
-  
-  component cell_1b is
-    port (
-      my   : in  std_logic;
-      y    : in  std_logic;
-      m    : in  std_logic;
-      x    : in  std_logic;
-      q    : in  std_logic;
-      a    : in  std_logic;
-      cin  : in  std_logic;
-      cout : out std_logic;
-      r    : out std_logic
-    );
-  end component cell_1b;
-  
   component counter_sync is
     generic(
       max_value : integer := 1024
@@ -96,15 +202,6 @@ package mod_sim_exp_pkg is
       overflow    : out std_logic
     );
   end component counter_sync;
-  
-  component d_flip_flop is
-    port(
-      core_clk : in  std_logic;
-      reset    : in  std_logic;
-      din      : in  std_logic;
-      dout     : out std_logic
-    );
-  end component d_flip_flop;
   
   component fifo_primitive is
     port (
@@ -315,29 +412,6 @@ package mod_sim_exp_pkg is
       douta : out std_logic_vector(511 downto 0)
     );
   end component operands_sp;
-  
-  component register_1b is
-    port(
-      core_clk : in  std_logic;
-      ce       : in  std_logic;
-      reset    : in  std_logic;
-      din      : in  std_logic;
-      dout     : out std_logic
-    );
-  end component register_1b;
-  
-  component register_n is
-    generic(
-      n : integer := 4
-    );
-    port(
-      core_clk : in  std_logic;
-      ce       : in  std_logic;
-      reset    : in  std_logic;
-      din      : in  std_logic_vector((n-1) downto 0);
-      dout     : out std_logic_vector((n-1) downto 0)
-    );
-  end component register_n;
   
   component standard_cell_block is
     generic (
