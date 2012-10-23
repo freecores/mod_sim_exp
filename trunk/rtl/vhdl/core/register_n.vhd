@@ -50,21 +50,21 @@ use ieee.std_logic_unsigned.all;
 -- n-bit register with asynchronous reset and clock enable
 entity register_n is
   generic(
-    n : integer := 4
+    width : integer := 4
   );
   port(
     core_clk : in  std_logic; -- clock input
     ce       : in  std_logic; -- clock enable (active high)
     reset    : in  std_logic; -- reset (active high)
-    din      : in  std_logic_vector((n-1) downto 0);  -- data in (n-bit)
-    dout     : out std_logic_vector((n-1) downto 0)   -- data out (n-bit)
+    din      : in  std_logic_vector((width-1) downto 0);  -- data in (width)-bit
+    dout     : out std_logic_vector((width-1) downto 0)   -- data out (width)-bit
   );
 end register_n;
 
 
 architecture Behavorial of register_n is
 begin
-	 -- process for n-bit register
+	 -- process for (width)-bit register
   reg_nb : process (reset, ce, core_clk, din)
   begin
     if reset='1' then -- asynchronous active high reset
