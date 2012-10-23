@@ -6,7 +6,8 @@
 ----    http://www.opencores.org/cores/mod_sim_exp/               ---- 
 ----                                                              ---- 
 ----  Description                                                 ---- 
-----    1 bit D flip-flop currently still uses primitives         ----
+----    1-bit D flip-flop implemented with behavorial (generic)   ----
+----    description. With asynchronous active high reset.         ----
 ----                                                              ---- 
 ----  Dependencies: none                                          ---- 
 ----                                                              ---- 
@@ -45,36 +46,31 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
 use ieee.std_logic_unsigned.all;
--- Xilinx primitives used
-library unisim;
-use unisim.vcomponents.all;
 
-
+-- 1-bit D flip-flop with asynchronous active high reset
 entity d_flip_flop is
   port(
-    core_clk : in  std_logic;
-    reset    : in  std_logic;
-    din      : in  std_logic;
-    dout     : out std_logic
+    core_clk : in  std_logic; -- clock signal
+    reset    : in  std_logic; -- active high reset
+    din      : in  std_logic; -- data in
+    dout     : out std_logic  -- data out
   );
 end d_flip_flop;
 
 
-architecture Structural of d_flip_flop is
-  signal dout_i : std_logic;
+architecture Behavorial of d_flip_flop is
 begin
-
-  dout <= dout_i;
-
-  FDCE_inst : FDCE
-  generic map (
-    INIT => '0')     -- Initial value of latch ('0' or '1')
-  port map (
-    Q   => dout_i,   -- Data output
-    CLR => reset,    -- Asynchronous clear/reset input
-    D   => din,      -- Data input
-    C   => core_clk, -- Gate input
-    CE  => '1'       -- Gate enable input
-  );
-
-end Structural;
+  
+  -- process for 1-bit D flip-flop
+  d_FF : process (reset, core_clk, din)
+  begin
+    if reset='1' then -- asynchronous active high reset
+      dout <= '0';
+    else
+      if rising_edge(core_clk) then -- clock in data on rising edge
+        dout <= din;
+      end if;
+    end if;
+  end process; 
+  
+end Behavorial;
