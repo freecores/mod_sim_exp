@@ -136,7 +136,7 @@ begin
   -- output registers
   RESULT_REG : register_n
   generic map(
-    n => (width+2)
+    width => (width+2)
   )
   port map(
     core_clk => core_clk,
