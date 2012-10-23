@@ -50,7 +50,11 @@ use ieee.std_logic_unsigned.all;
 
 package mod_sim_exp_pkg is
   
-  -- 1-bit D flip-flop with asynchronous active high reset
+  --------------------------------------------------------------------
+  -- d_flip_flop
+  --------------------------------------------------------------------
+  --    1-bit D flip-flop with asynchronous active high reset
+  -- 
   component d_flip_flop is
     port(
       core_clk : in  std_logic; -- clock signal
@@ -60,7 +64,11 @@ package mod_sim_exp_pkg is
     );
   end component d_flip_flop;
   
-  -- 1-bit register with asynchronous reset and clock enable
+  --------------------------------------------------------------------
+  -- register_1b
+  --------------------------------------------------------------------
+  --    1-bit register with asynchronous reset and clock enable
+  -- 
   component register_1b is
     port(
       core_clk : in  std_logic; -- clock input
@@ -71,21 +79,29 @@ package mod_sim_exp_pkg is
     );
   end component register_1b;
   
-  -- n-bit register with asynchronous reset and clock enable
+  --------------------------------------------------------------------
+  -- register_n
+  --------------------------------------------------------------------
+  --    n-bit register with asynchronous reset and clock enable
+  -- 
   component register_n is
     generic(
-      n : integer := 4
+      width : integer := 4
     );
     port(
       core_clk : in  std_logic; -- clock input
       ce       : in  std_logic; -- clock enable (active high)
       reset    : in  std_logic; -- reset (active high)
-      din      : in  std_logic_vector((n-1) downto 0);  -- data in (n-bit)
-      dout     : out std_logic_vector((n-1) downto 0)   -- data out (n-bit)
+      din      : in  std_logic_vector((width-1) downto 0);  -- data in (width)-bit
+      dout     : out std_logic_vector((width-1) downto 0)   -- data out (width)-bit
     );
   end component register_n;
   
-  -- 1-bit full adder cell
+  --------------------------------------------------------------------
+  -- cell_1b_adder
+  --------------------------------------------------------------------
+  --    1-bit full adder cell using combinatorial logic
+  --    
   component cell_1b_adder is
     port (
       -- input operands a, b
@@ -99,7 +115,12 @@ package mod_sim_exp_pkg is
     );
   end component cell_1b_adder;
   
-  -- 1-bit mux for a standard cell in the montgommery multiplier systolic array
+  --------------------------------------------------------------------
+  -- cell_1b_mux
+  --------------------------------------------------------------------
+  --    1-bit mux for a standard cell in the montgommery multiplier 
+  --    systolic array
+  -- 
   component cell_1b_mux is
     port (
       -- input bits
@@ -114,14 +135,18 @@ package mod_sim_exp_pkg is
     );
   end component cell_1b_mux;
   
-  -- 1-bit cell for the systolic array
+  --------------------------------------------------------------------
+  -- cell_1b
+  --------------------------------------------------------------------
+  --    1-bit cell for the systolic array
+  -- 
   component cell_1b is
     port (
       -- operand input bits (m+y, y and m)
       my   : in  std_logic;
       y    : in  std_logic;
       m    : in  std_logic;
-      -- operand x input bit and q (serial)
+      -- operand x input bit and q
       x    : in  std_logic;
       q    : in  std_logic;
       -- previous result input bit
@@ -134,8 +159,12 @@ package mod_sim_exp_pkg is
     );
   end component cell_1b;
   
-  -- (width)-bit full adder block using cell_1b_adders
-  -- with buffered carry out
+  --------------------------------------------------------------------
+  -- adder_block
+  --------------------------------------------------------------------
+  --    (width)-bit full adder block using cell_1b_adders with buffered
+  --    carry out
+  -- 
   component adder_block is
     generic (
       width : integer := 32 --adder operand widths
@@ -154,8 +183,13 @@ package mod_sim_exp_pkg is
     );
   end component adder_block;
   
-  -- n-bit adder using adder blocks. works in stages, to prevent large 
-  -- carry propagation
+  --------------------------------------------------------------------
+  -- adder_n
+  --------------------------------------------------------------------
+  --    n-bit adder using adder blocks. works in stages, to prevent 
+  --    large carry propagation. 
+  --    Result avaiable after (width/block_width) clock cycles
+  -- 
   component adder_n is
     generic (
       width       : integer := 1536; -- adder operands width
