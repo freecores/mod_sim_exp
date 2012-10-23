@@ -1,5 +1,5 @@
 ----------------------------------------------------------------------  
-----  cel_1b                                                      ---- 
+----  cell_1b                                                      ---- 
 ----                                                              ---- 
 ----  This file is part of the                                    ----
 ----    Modular Simultaneous Exponentiation Core project          ---- 
@@ -59,7 +59,7 @@ entity cell_1b is
     my   : in  std_logic;
     y    : in  std_logic;
     m    : in  std_logic;
-    -- operand x input bit and q (serial)
+    -- operand x input bit and q
     x    : in  std_logic;
     q    : in  std_logic;
     -- previous result input bit
