@@ -7,7 +7,7 @@
 ----                                                              ---- 
 ----  Description                                                 ---- 
 ----    This file contains the implementation of a 1-bit full     ----
-----    adder cell using logic gates                              ----
+----    adder cell using combinatorial logic                      ----
 ----    used in adder_block                                       ----
 ----                                                              ----
 ----  Dependencies: none                                          ----
@@ -48,14 +48,15 @@ use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
 use ieee.std_logic_unsigned.all;
 
-
+-- 1-bit full adder cell
+-- for use in the montgommery multiplier systolic array cells
 entity cell_1b_adder is
   port (
-    a          : in  std_logic;
-    mux_result : in  std_logic;
-    cin        : in  std_logic;
-    cout       : out  std_logic;
-    r          : out  std_logic
+    a          : in  std_logic;   -- adder input operand a
+    mux_result : in  std_logic;   -- adder input muxed result
+    cin        : in  std_logic;   -- carry in
+    cout       : out  std_logic;  -- carry out
+    r          : out  std_logic   -- result out
   );
 end cell_1b_adder;
 
@@ -63,6 +64,8 @@ end cell_1b_adder;
 architecture Behavioral of cell_1b_adder is
   signal a_xor_mux_result : std_logic;
 begin
+  -- 1-bit full adder with combinatorial logic
+  -- uses 2 XOR's, 2 AND's and 1 OR port
   a_xor_mux_result <= a xor mux_result;
   r <= a_xor_mux_result xor cin;
   cout <= (a and mux_result) or (cin and a_xor_mux_result);
