@@ -55,6 +55,7 @@ use mod_sim_exp.mod_sim_exp_pkg.all;
 
 -- n-bit adder using adder blocks. works in stages, to prevent large 
 -- carry propagation
+-- Result avaiable after (width/block_width) clock cycles
 entity adder_n is
   generic (
     width       : integer := 1536; -- adder operands width
@@ -77,8 +78,12 @@ end adder_n;
 
 architecture Structural of adder_n is
   constant nr_of_blocks : integer := width/block_width;   -- number of blocks/stages in the adder
-  signal carry : std_logic_vector(nr_of_blocks downto 0); -- array for the carry bits
+  signal carry : std_logic_vector(nr_of_blocks downto 0); -- vector for the carry bits
 begin
+  
+  -- report failure if width is not dividable by block_width
+  assert (width mod block_width)=0 
+  report "adder_n: width is not divisible by block_width!!" severity failure;
   
   -- carry in
   carry(0) <= cin;
