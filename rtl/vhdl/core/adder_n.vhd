@@ -7,7 +7,7 @@
 ----                                                              ---- 
 ----  Description                                                 ---- 
 ----    This file contains the implementation of a n-bit adder    ----
-----    using adder_blocks                                        ----
+----    using adder_blocks, divides the adder in stages           ----
 ----    used for the montgommery multiplier pre- and post-        ----
 ----    computation adder                                         ---- 
 ----                                                              ---- 
@@ -53,30 +53,37 @@ use ieee.std_logic_unsigned.all;
 library mod_sim_exp;
 use mod_sim_exp.mod_sim_exp_pkg.all;
 
-
+-- n-bit adder using adder blocks. works in stages, to prevent large 
+-- carry propagation
 entity adder_n is
   generic (
-    width       : integer := 1536;
-    block_width : integer := 8
+    width       : integer := 1536; -- adder operands width
+    block_width : integer := 8     -- adder blocks size
   );
   port (
-    core_clk : in std_logic;
-    a        : in std_logic_vector((width-1) downto 0);
-    b        : in std_logic_vector((width-1) downto 0);
-    cin      : in std_logic;
-    cout     : out std_logic;
-    s        : out std_logic_vector((width-1) downto 0)
+    -- clock input
+    core_clk : in std_logic;  
+    -- adder input operands (width)-bit
+    a : in std_logic_vector((width-1) downto 0);
+    b : in std_logic_vector((width-1) downto 0);
+    -- carry in, out
+    cin   : in std_logic;
+    cout  : out std_logic;
+    -- adder output result (width)-bit
+    r : out std_logic_vector((width-1) downto 0) 
   );
 end adder_n;
 
 
 architecture Structural of adder_n is
-  constant nr_of_blocks : integer := width/block_width;
-  signal carry : std_logic_vector(nr_of_blocks downto 0);
+  constant nr_of_blocks : integer := width/block_width;   -- number of blocks/stages in the adder
+  signal carry : std_logic_vector(nr_of_blocks downto 0); -- array for the carry bits
 begin
-
+  
+  -- carry in
   carry(0) <= cin;
 
+  -- structure of (nr_of_blocks) adder_blocks
   adder_block_chain : for i in 0 to (nr_of_blocks-1) generate
     adder_blocks : adder_block
     generic map(
@@ -88,10 +95,11 @@ begin
       b        => b((((i+1)*block_width)-1) downto (i*block_width)),
       cin      => carry(i),
       cout     => carry(i+1),
-      s        => s((((i+1)*block_width)-1) downto (i*block_width))
+      r        => r((((i+1)*block_width)-1) downto (i*block_width))
     );
   end generate;
 
+  -- carry out
   cout <= carry(nr_of_blocks);
 
 end Structural;

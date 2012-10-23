@@ -53,39 +53,48 @@ use ieee.std_logic_unsigned.all;
 library mod_sim_exp;
 use mod_sim_exp.mod_sim_exp_pkg.all;
 
+-- (width)-bit full adder block using cell_1b_adders
+-- with buffered carry out
 entity adder_block is
   generic (
-    width : integer := 32
+    width : integer := 32 --adder operand widths
   );
   port (
-    core_clk : in std_logic;
-    a        : in  std_logic_vector((width-1) downto 0);
-    b        : in  std_logic_vector((width-1) downto 0);
-    cin      : in std_logic;
-    cout     : out std_logic;
-    s        : out  std_logic_vector((width-1) downto 0)
+    -- clock input
+    core_clk : in std_logic; 
+    -- adder input operands a, b (width)-bit
+    a : in std_logic_vector((width-1) downto 0);
+    b : in std_logic_vector((width-1) downto 0);
+    -- carry in, out
+    cin   : in std_logic;
+    cout  : out std_logic;
+    -- adder result out (width)-bit
+    r : out std_logic_vector((width-1) downto 0) 
   );
 end adder_block;
 
 
 architecture Structural of adder_block is
+  -- array for the carry bits
   signal carry : std_logic_vector(width downto 0);
 begin
-
+  -- carry in
   carry(0) <= cin;
 
+  -- structure of (width) cell_1b_adders
   adder_chain : for i in 0 to (width-1) generate
     adders : cell_1b_adder
     port map(
-      a          => a(i),
-      mux_result => b(i),
-      cin        => carry(i),
-      cout       => carry(i+1),
-      r          => s(i)
+      a    => a(i),
+      b    => b(i),
+      cin  => carry(i),
+      cout => carry(i+1),
+      r    => r(i)
     );
   end generate;
-
-  delay_1_cycle : d_flip_flop
+  
+  -- buffer the carry every clock cycle
+  carry_reg : d_flip_flop
   port map(
     core_clk => core_clk,
     reset    => '0',

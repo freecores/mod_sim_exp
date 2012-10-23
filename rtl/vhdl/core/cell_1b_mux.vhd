@@ -6,7 +6,8 @@
 ----    http://www.opencores.org/cores/mod_sim_exp/               ---- 
 ----                                                              ---- 
 ----  Description                                                 ---- 
-----    mux for use in the montgommery multiplier systolic array  ----
+----    1-bit mux for a standard cell in the montgommery          ----
+----    multiplier systolic array                                 ----
 ----                                                              ---- 
 ----  Dependencies: none                                          ---- 
 ----                                                              ---- 
@@ -46,14 +47,17 @@ use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
 use ieee.std_logic_unsigned.all;
 
-
+-- 1-bit mux for a standard cell in the montgommery multiplier systolic array
 entity cell_1b_mux is
   port (
-    my     : in  std_logic;
+    -- input bits
+    my     : in  std_logic; 
     y      : in  std_logic;
     m      : in  std_logic;
+    -- selection bits
     x      : in  std_logic;
     q      : in  std_logic;
+    -- mux out
     result : out std_logic
   );
 end cell_1b_mux;
@@ -62,9 +66,9 @@ end cell_1b_mux;
 architecture Behavioral of cell_1b_mux is
   signal sel : std_logic_vector(1 downto 0);
 begin
-
+  -- selection bits
   sel <= x & q;
-
+  -- multipexer
   with sel select
     result <=  my when "11",
                 y when "10",

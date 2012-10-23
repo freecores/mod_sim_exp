@@ -6,7 +6,7 @@
 ----    http://www.opencores.org/cores/mod_sim_exp/               ---- 
 ----                                                              ---- 
 ----  Description                                                 ---- 
-----    1 bit cell for use in the montgommery multiplier systolic ----
+----    1-bit cell for use in the montgommery multiplier systolic ----
 ----    array                                                     ----
 ----                                                              ---- 
 ----  Dependencies:                                               ---- 
@@ -52,26 +52,33 @@ use ieee.std_logic_unsigned.all;
 library mod_sim_exp;
 use mod_sim_exp.mod_sim_exp_pkg.all;
 
-
+-- 1-bit cell for the systolic array
 entity cell_1b is
   port (
+    -- operand input bits (m+y, y and m)
     my   : in  std_logic;
     y    : in  std_logic;
     m    : in  std_logic;
+    -- operand x input bit and q (serial)
     x    : in  std_logic;
     q    : in  std_logic;
+    -- previous result input bit
     a    : in  std_logic;
+    -- carry's
     cin  : in  std_logic;
     cout : out std_logic;
+    -- cell result out
     r    : out std_logic
   );
 end cell_1b;
 
 
 architecture Structural of cell_1b is
+  -- mux to adder connection
   signal mux2adder : std_logic;
 begin
-
+  
+  -- mux for my, y and m input bits
   cell_mux : cell_1b_mux
   port map(
     my     => my,
@@ -81,14 +88,15 @@ begin
     q      => q,
     result => mux2adder
   );
-
+  
+  -- full adder for a+mux2adder
   cell_adder : cell_1b_adder
   port map(
-    a          => a,
-    mux_result => mux2adder,
-    cin        => cin,
-    cout       => cout,
-    r          => r
+    a    => a,
+    b    => mux2adder,
+    cin  => cin,
+    cout => cout,
+    r    => r
   );
 
 end Structural;
