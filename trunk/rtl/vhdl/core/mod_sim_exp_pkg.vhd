@@ -274,6 +274,73 @@ package mod_sim_exp_pkg is
     );
   end component standard_stage;
   
+  --------------------------------------------------------------------
+  -- first_stage
+  --------------------------------------------------------------------
+  --    first stage for use in the montgommery multiplier pipeline
+  --    generates the q signal for all following stages
+  --    the result is available after 1 clock cycle
+  -- 
+  component first_stage is
+    generic(
+      width : integer := 16 -- must be the same as width of the standard stage
+    );
+    port(
+      -- clock input
+      core_clk : in  std_logic;
+      -- modulus and y operand input (width+1)-bit
+      my       : in  std_logic_vector((width) downto 0);
+      y        : in  std_logic_vector((width) downto 0);
+      m        : in  std_logic_vector((width) downto 0);
+      -- x operand input (serial input)
+      xin      : in  std_logic;
+      -- q and x operand output (serial output)
+      xout     : out std_logic;
+      qout     : out std_logic;
+      -- msb input (lsb from next stage, for shift right operation)
+      a_msb    : in  std_logic;
+      -- carry out
+      cout     : out std_logic;
+      -- control signals
+      start    : in  std_logic;
+      reset    : in  std_logic;
+      done     : out std_logic;
+      -- result out
+      r        : out std_logic_vector((width-1) downto 0)
+    );
+  end component first_stage;
+  
+  --------------------------------------------------------------------
+  -- last_stage
+  --------------------------------------------------------------------
+  --    last stage for use in the montgommery multiplier pipeline
+  --    the result is available after 1 clock cycle
+  -- 
+  component last_stage is
+    generic(
+      width : integer := 16 -- must be the same as width of the standard stage
+    );
+    port(
+      -- clock input
+      core_clk : in  std_logic;
+      -- modulus and y operand input (width(-1))-bit
+      my       : in  std_logic_vector((width-1) downto 0);
+      y        : in  std_logic_vector((width-2) downto 0);
+      m        : in  std_logic_vector((width-2) downto 0);
+      -- q and x operand input (serial input)
+      xin      : in  std_logic;
+      qin      : in  std_logic;
+      -- carry in
+      cin      : in  std_logic;
+      -- control signals
+      start    : in  std_logic;
+      reset    : in  std_logic;
+      -- result out
+      r        : out std_logic_vector((width+1) downto 0)
+    );
+  end component last_stage;
+  
+  
   component autorun_cntrl is
     port (
       clk              : in  std_logic;
@@ -316,45 +383,6 @@ package mod_sim_exp_pkg is
       nopush : out std_logic
     );
   end component fifo_primitive;
-  
-  component first_stage is
-    generic(
-      width : integer := 16 -- must be the same as width of the standard stage
-    );
-    port(
-      core_clk : in  std_logic;
-      my       : in  std_logic_vector((width) downto 0);
-      y        : in  std_logic_vector((width) downto 0);
-      m        : in  std_logic_vector((width) downto 0);
-      xin      : in  std_logic;
-      xout     : out std_logic;
-      qout     : out std_logic;
-      a_msb    : in  std_logic;
-      cout     : out std_logic;
-      start    : in  std_logic;
-      reset    : in  std_logic;
-      done     : out std_logic;
-      r        : out std_logic_vector((width-1) downto 0)
-    );
-  end component first_stage;
-  
-  component last_stage is
-    generic(
-      width : integer := 16 -- must be the same as width of the standard stage
-    );
-    port(
-      core_clk : in  std_logic;
-      my       : in  std_logic_vector((width-1) downto 0);
-      y        : in  std_logic_vector((width-2) downto 0);
-      m        : in  std_logic_vector((width-2) downto 0);
-      xin      : in  std_logic;
-      qin      : in  std_logic;
-      cin      : in  std_logic;
-      start    : in  std_logic;
-      reset    : in  std_logic;
-      r        : out std_logic_vector((width+1) downto 0)
-    );
-  end component last_stage;
   
   component modulus_ram is
     port(

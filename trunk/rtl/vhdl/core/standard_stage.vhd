@@ -92,7 +92,7 @@ architecture Structural of standard_stage is
   -- output
   signal cout_i     : std_logic;
   signal r_i        : std_logic_vector((width-1) downto 0);
-  signal r_reg_i    : std_logic_vector((width-1) downto 0);
+  signal r_i_reg    : std_logic_vector((width-1) downto 0);
 
   -- interconnect
   signal a : std_logic_vector((width-1) downto 0);
@@ -100,10 +100,10 @@ architecture Structural of standard_stage is
 begin
 
 	-- map internal signals to outputs
-	r <= r_reg_i;
+	r <= r_i_reg;
 	
 	-- a is equal to the right shifted version(/2) of r_reg with a_msb as MSB
-	a <= a_msb & r_reg_i((width-1) downto 1);
+	a <= a_msb & r_i_reg((width-1) downto 1);
 	
 	-- structure of (width) standard_cell_blocks
   cell_block : standard_cell_block
@@ -145,7 +145,7 @@ begin
     ce    => start,
     reset => reset,
     din   => r_i,
-    dout  => r_reg_i
+    dout  => r_i_reg
   );
   
   -- xout register

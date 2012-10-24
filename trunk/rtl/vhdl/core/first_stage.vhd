@@ -55,79 +55,74 @@ use ieee.std_logic_unsigned.all;
 library mod_sim_exp;
 use mod_sim_exp.mod_sim_exp_pkg.all;
 
-
+-- first stage for use in the montgommery multiplier pipeline
+-- generates the q signal for all following stages
+-- the result is available after 1 clock cycle
 entity first_stage is
   generic(
     width : integer := 16 -- must be the same as width of the standard stage
   );
   port(
+    -- clock input
     core_clk : in  std_logic;
+    -- modulus and y operand input (width+1)-bit
     my       : in  std_logic_vector((width) downto 0);
     y        : in  std_logic_vector((width) downto 0);
     m        : in  std_logic_vector((width) downto 0);
+    -- x operand input (serial input)
     xin      : in  std_logic;
+    -- q and x operand output (serial output)
     xout     : out std_logic;
     qout     : out std_logic;
+    -- msb input (lsb from next stage, for shift right operation)
     a_msb    : in  std_logic;
+    -- carry out
     cout     : out std_logic;
+    -- control signals
     start    : in  std_logic;
     reset    : in  std_logic;
     done     : out std_logic;
+    -- result out
     r        : out std_logic_vector((width-1) downto 0)
   );
 end first_stage;
 
 
 architecture Structural of first_stage is
-  -- input
-  signal xin_i   : std_logic;
-  signal a_msb_i : std_logic;
-
   -- output
   signal cout_i     : std_logic;
   signal r_i        : std_logic_vector((width-1) downto 0);
-  signal cout_reg_i : std_logic;
-  signal xout_reg_i : std_logic;
-  signal qout_reg_i : std_logic;
-  signal r_reg_i    : std_logic_vector((width-1) downto 0);
+  signal r_i_reg    : std_logic_vector((width-1) downto 0);
+  signal qout_i      : std_logic;
 
   -- interconnection
-  signal q_i         : std_logic;
-  signal c_i         : std_logic;
-  signal first_res_i : std_logic;
-  signal a_i         : std_logic_vector((width) downto 0);
+  signal first_res   : std_logic;
+  signal c_first_res : std_logic;
+  signal a           : std_logic_vector((width) downto 0);
 
-  -- control signals
-  signal done_i : std_logic := '1';
 begin
 	
-	-- map inputs to internal signals
-	xin_i <= xin;
-	a_msb_i <= a_msb;
-	
 	-- map internal signals to outputs
-	done <= done_i;
-	r <= r_reg_i;
-	cout <= cout_reg_i;
-	qout <= qout_reg_i;
-	xout <= xout_reg_i;
+	r <= r_i_reg;
 	
-	a_i <= a_msb_i & r_reg_i;
+	-- a is equal to the right shifted version(/2) of r_reg with a_msb as MSB
+	a <= a_msb & r_i_reg;
 
-	-- compute first q_i and carry
-	q_i <= a_i(0) xor (y(0) and xin_i);
-	c_i <= a_i(0) and first_res_i;
+	-- compute first q and carry
+	qout_i <= a(0) xor (y(0) and xin);
+	c_first_res <= a(0) and first_res;
 	
   first_cell : cell_1b_mux
   port map(
     my     => my(0),
     y      => y(0),
     m      => m(0),
-    x      => xin_i,
-    q      => q_i,
-    result => first_res_i
+    x      => xin,
+    q      => qout_i,
+    result => first_res
   );
 
+  -- structure of (width) standard_cell_blocks
   cell_block : standard_cell_block
   generic map(
     width => width
@@ -136,24 +131,29 @@ begin
     my   => my(width downto 1),
     y    => y(width downto 1),
     m    => m(width downto 1),
-    x    => xin_i,
-    q    => q_i,
-    a    => a_i(width downto 1),
-    cin  => c_i,
+    x    => xin,
+    q    => qout_i,
+    a    => a(width downto 1),
+    cin  => c_first_res,
     cout => cout_i,
     r    => r_i((width-1) downto 0)
   );
 
+  -- stage done signal
+  -- 1 cycle after start of stage
   done_signal : d_flip_flop
   port map(
     core_clk => core_clk,
     reset    => reset,
     din      => start,
-    dout     => done_i
+    dout     => done
   );
 
   -- output registers
-  RESULT_REG : register_n
+  --------------------
+  
+  -- result register (width)-bit
+  result_reg : register_n
   generic map(
     width => width
   )
@@ -162,35 +162,37 @@ begin
     ce       => start,
     reset    => reset,
     din      => r_i,
-    dout     => r_reg_i
+    dout     => r_i_reg
   );
 
-  XOUT_REG : register_1b
+  -- xout register
+  xout_reg : register_1b
   port map(
     core_clk => core_clk,
     ce       => start,
     reset    => reset,
-    din      => xin_i,
-    dout     => xout_reg_i
+    din      => xin,
+    dout     => xout
   );
-
-  QOUT_REG : register_1b
+  
+  -- qout register
+  qout_reg : register_1b
   port map(
     core_clk => core_clk,
     ce       => start,
     reset    => reset,
-    din      => q_i,
-    dout     => qout_reg_i
+    din      => qout_i,
+    dout     => qout
   );
 
-  COUT_REG : register_1b
+  -- carry out register
+  cout_reg : register_1b
   port map(
     core_clk => core_clk,
     ce       => start,
     reset    => reset,
     din      => cout_i,
-    dout     => cout_reg_i
+    dout     => cout
   );
-
 
 end Structural;
