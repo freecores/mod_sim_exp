@@ -209,6 +209,71 @@ package mod_sim_exp_pkg is
     );
   end component adder_n;
   
+  --------------------------------------------------------------------
+  -- standard_cell_block
+  --------------------------------------------------------------------
+  --    a standard cell block of (width)-bit for the montgommery multiplier 
+  --    systolic array
+  -- 
+  component standard_cell_block is
+    generic (
+      width : integer := 16
+    );
+    port (
+      -- modulus and y operand input (width)-bit
+      my   : in  std_logic_vector((width-1) downto 0);
+      y    : in  std_logic_vector((width-1) downto 0);
+      m    : in  std_logic_vector((width-1) downto 0);
+      -- q and x operand input (serial input)
+      x    : in  std_logic;
+      q    : in  std_logic;
+      -- previous result in (width)-bit
+      a    : in  std_logic_vector((width-1) downto 0);
+      -- carry in and out
+      cin  : in std_logic;
+      cout : out std_logic;
+      -- result out (width)-bit
+      r    : out  std_logic_vector((width-1) downto 0)
+    );
+  end component standard_cell_block;
+  
+  --------------------------------------------------------------------
+  -- standard_stage
+  --------------------------------------------------------------------
+  --    standard stage for use in the montgommery multiplier pipeline
+  --    the result is available after 1 clock cycle
+  -- 
+  component standard_stage is
+    generic(
+      width : integer := 32
+    );
+    port(
+      -- clock input
+      core_clk : in  std_logic;
+      -- modulus and y operand input (width)-bit
+      my       : in  std_logic_vector((width-1) downto 0);
+      y        : in  std_logic_vector((width-1) downto 0);
+      m        : in  std_logic_vector((width-1) downto 0);
+      -- q and x operand input (serial input)
+      xin      : in  std_logic;
+      qin      : in  std_logic;
+      -- q and x operand output (serial output)
+      xout     : out std_logic;
+      qout     : out std_logic;
+      -- msb input (lsb from next stage, for shift right operation)
+      a_msb    : in  std_logic;
+      -- carry out(clocked) and in
+      cin      : in  std_logic;
+      cout     : out std_logic;
+      -- control singals
+      start    : in  std_logic;
+      reset    : in  std_logic;
+      done : out std_logic;
+      -- result out
+      r    : out std_logic_vector((width-1) downto 0)
+    );
+  end component standard_stage;
+  
   component autorun_cntrl is
     port (
       clk              : in  std_logic;
@@ -446,46 +511,6 @@ package mod_sim_exp_pkg is
       douta : out std_logic_vector(511 downto 0)
     );
   end component operands_sp;
-  
-  component standard_cell_block is
-    generic (
-      width : integer := 16
-    );
-    port (
-      my   : in  std_logic_vector((width-1) downto 0);
-      y    : in  std_logic_vector((width-1) downto 0);
-      m    : in  std_logic_vector((width-1) downto 0);
-      x    : in  std_logic;
-      q    : in  std_logic;
-      a    : in  std_logic_vector((width-1) downto 0);
-      cin  : in std_logic;
-      cout : out std_logic;
-      r    : out  std_logic_vector((width-1) downto 0)
-    );
-  end component standard_cell_block;
-  
-  component standard_stage is
-    generic(
-      width : integer := 32
-    );
-    port(
-      core_clk : in  std_logic;
-      my       : in  std_logic_vector((width-1) downto 0);
-      y        : in  std_logic_vector((width-1) downto 0);
-      m        : in  std_logic_vector((width-1) downto 0);
-      xin      : in  std_logic;
-      qin      : in  std_logic;
-      xout     : out std_logic;
-      qout     : out std_logic;
-      a_msb    : in  std_logic;
-      cin      : in  std_logic;
-      cout     : out std_logic;
-      start    : in  std_logic;
-      reset    : in  std_logic;
-      done : out std_logic;
-      r    : out std_logic_vector((width-1) downto 0)
-    );
-  end component standard_stage;
   
   component stepping_logic is
     generic(

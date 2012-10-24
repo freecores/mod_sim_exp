@@ -54,68 +54,58 @@ use ieee.std_logic_unsigned.all;
 library mod_sim_exp;
 use mod_sim_exp.mod_sim_exp_pkg.all;
 
-
+-- standard stage for use in the montgommery multiplier pipeline
+-- the result is available after 1 clock cycle
 entity standard_stage is
   generic(
     width : integer := 32
   );
   port(
+    -- clock input
     core_clk : in  std_logic;
+    -- modulus and y operand input (width)-bit
     my       : in  std_logic_vector((width-1) downto 0);
     y        : in  std_logic_vector((width-1) downto 0);
     m        : in  std_logic_vector((width-1) downto 0);
+    -- q and x operand input (serial input)
     xin      : in  std_logic;
     qin      : in  std_logic;
+    -- q and x operand output (serial output)
     xout     : out std_logic;
     qout     : out std_logic;
+    -- msb input (lsb from next stage, for shift right operation)
     a_msb    : in  std_logic;
+    -- carry out(clocked) and in
     cin      : in  std_logic;
     cout     : out std_logic;
+    -- control singals
     start    : in  std_logic;
     reset    : in  std_logic;
     done : out std_logic;
+    -- result out
     r    : out std_logic_vector((width-1) downto 0)
   );
 end standard_stage;
 
 
 architecture Structural of standard_stage is
-  -- input
-  signal cin_i   : std_logic;
-  signal xin_i   : std_logic;
-  signal qin_i   : std_logic;
-  signal a_msb_i : std_logic;
-
   -- output
   signal cout_i     : std_logic;
   signal r_i        : std_logic_vector((width-1) downto 0);
-  signal cout_reg_i : std_logic;
-  signal xout_reg_i : std_logic;
-  signal qout_reg_i : std_logic;
   signal r_reg_i    : std_logic_vector((width-1) downto 0);
 
   -- interconnect
-  signal a_i : std_logic_vector((width-1) downto 0);
+  signal a : std_logic_vector((width-1) downto 0);
 
-  -- control
-  signal done_i : std_logic := '1';
 begin
 
 	-- map internal signals to outputs
-	done <= done_i;
 	r <= r_reg_i;
-	cout <= cout_reg_i;
-	qout <= qout_reg_i;
-	xout <= xout_reg_i;
 	
-	-- map inputs to internal signals
-	xin_i <= xin;
-	qin_i <= qin;
-	cin_i <= cin;
-	a_msb_i <= a_msb;
+	-- a is equal to the right shifted version(/2) of r_reg with a_msb as MSB
+	a <= a_msb & r_reg_i((width-1) downto 1);
 	
-	a_i <= a_msb_i & r_reg_i((width-1) downto 1);
-	
+	-- structure of (width) standard_cell_blocks
   cell_block : standard_cell_block
   generic map(
     width => width
@@ -124,24 +114,29 @@ begin
     my   => my,
     y    => y,
     m    => m,
-    x    => xin_i,
-    q    => qin_i,
-    a    => a_i,
-    cin  => cin_i,
+    x    => xin,
+    q    => qin,
+    a    => a,
+    cin  => cin,
     cout => cout_i,
     r    => r_i
   );
 	
+  -- stage done signal
+  -- 1 cycle after start of stage
   done_signal : d_flip_flop
   port map(
-    core_clk => core_clk,
-    reset    => reset,
-    din  => start,
-    dout => done_i
+    core_clk  => core_clk,
+    reset => reset,
+    din   => start,
+    dout  => done
   );
 
   -- output registers
-  RESULT_REG : register_n
+  --------------------
+  
+  -- result register (width)-bit
+  result_reg : register_n
   generic map(
     width => width
   )
@@ -152,33 +147,35 @@ begin
     din   => r_i,
     dout  => r_reg_i
   );
-
-  XOUT_REG : register_1b
+  
+  -- xout register
+  xout_reg : register_1b
   port map(
     core_clk => core_clk,
     ce    => start,
     reset => reset,
-    din  => xin_i,
-    dout => xout_reg_i
+    din   => xin,
+    dout  => xout
   );
-
-  QOUT_REG : register_1b
+  
+  -- qout register
+  qout_reg : register_1b
   port map(
     core_clk => core_clk,
     ce    => start,
     reset => reset,
-    din  => qin_i,
-    dout => qout_reg_i
+    din   => qin,
+    dout  => qout
   );
 
-  COUT_REG : register_1b
+  -- carry out register
+  cout_reg : register_1b
   port map(
     core_clk => core_clk,
     ce    => start,
     reset => reset,
     din   => cout_i,
-    dout  => cout_reg_i
+    dout  => cout
   );
-
-	
+  
 end Structural;
