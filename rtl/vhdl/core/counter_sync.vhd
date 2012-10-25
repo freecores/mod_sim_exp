@@ -47,45 +47,45 @@ use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
 use ieee.std_logic_unsigned.all;
 
-
+-- counter with synchronous count enable. It generates an
+-- overflow when max_value is reached
 entity counter_sync is
   generic(
-    max_value : integer := 1024
+    max_value : integer := 1024 -- maximum value (constraints the nr bits for counter)
   );
   port(
-    reset_value : in integer;
-    core_clk    : in std_logic;
-    ce          : in std_logic;
-    reset       : in std_logic;
-    overflow    : out std_logic
+    reset_value : in integer;   -- value the counter counts to
+    core_clk    : in std_logic; -- clock input
+    ce          : in std_logic; -- count enable
+    reset       : in std_logic; -- reset input
+    overflow    : out std_logic -- gets high when counter reaches reset_value
   );
 end counter_sync;
 
 
 architecture Behavioral of counter_sync is
-	
-	signal overflow_i : std_logic := '0';
 begin
 	
-	overflow <= overflow_i;
-	
-	COUNT_PROC: process(core_clk, ce, reset)
-		variable steps_counter : integer range 0 to max_value-1 := 0;
+	-- counter process with asynchronous active high reset
+	count_proc: process(core_clk, ce, reset)
+		variable steps_counter : integer range 0 to max_value-1;
 	begin
 		if reset = '1' then  -- reset counter
 			steps_counter := 0;
-			overflow_i <= '0';
+			overflow <= '0';
 		elsif rising_edge(core_clk) then
-			if ce = '1' then -- count
+			-- counter is enabled, count till reset_value
+			if ce = '1' then 
 				if steps_counter = (reset_value-1) then -- generate overflow and reset counter
 					steps_counter := 0;
-					overflow_i <= '1';
+					overflow <= '1';
 				else	-- just count
 					steps_counter := steps_counter + 1;
-					overflow_i <= '0';
+					overflow <= '0';
 				end if;
 			else
-				overflow_i <= '0';
+			--counter disabled, halt counter
+				overflow <= '0';
 				steps_counter := steps_counter;
 			end if;
 		end if;
