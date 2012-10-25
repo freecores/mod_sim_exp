@@ -340,7 +340,47 @@ package mod_sim_exp_pkg is
     );
   end component last_stage;
   
+  --------------------------------------------------------------------
+  -- counter_sync
+  --------------------------------------------------------------------
+  --    counter with synchronous count enable. It generates an
+  --    overflow when max_value is reached
+  -- 
+  component counter_sync is
+    generic(
+      max_value : integer := 1024 -- maximum value (constraints the nr bits for counter)
+    );
+    port(
+      reset_value : in integer;   -- value the counter counts to
+      core_clk    : in std_logic; -- clock input
+      ce          : in std_logic; -- count enable
+      reset       : in std_logic; -- reset input
+      overflow    : out std_logic -- gets high when counter reaches reset_value
+    );
+  end component counter_sync;
   
+  --------------------------------------------------------------------
+  -- stepping_logic
+  --------------------------------------------------------------------
+  --    stepping logic for the pipeline, generates the start pulses for the
+  --    first stage and keeps track of when the last stages are done
+  -- 
+  component stepping_logic is
+    generic(
+      n : integer := 1536;  -- max nr of steps required to complete a multiplication
+      t : integer := 192    -- total nr of steps in the pipeline
+    );
+    port(
+      core_clk          : in  std_logic;  -- clock input
+      start             : in  std_logic;  -- start signal for pipeline (one multiplication)
+      reset             : in  std_logic;  -- reset signal
+      t_sel             : in integer range 0 to t; -- nr of stages in the pipeline piece
+      n_sel             : in integer range 0 to n; -- nr of steps(bits in operands) required for a complete multiplication
+      start_first_stage : out std_logic;  -- start pulse output for first stage
+      stepping_done     : out std_logic   -- done signal
+    );
+  end component stepping_logic;
+
   component autorun_cntrl is
     port (
       clk              : in  std_logic;
@@ -355,19 +395,6 @@ package mod_sim_exp_pkg is
       buffer_empty     : in  std_logic
     );
   end component autorun_cntrl;
-  
-  component counter_sync is
-    generic(
-      max_value : integer := 1024
-    );
-    port(
-      reset_value : in integer;
-      core_clk    : in std_logic;
-      ce          : in std_logic;
-      reset       : in std_logic;
-      overflow    : out std_logic
-    );
-  end component counter_sync;
   
   component fifo_primitive is
     port (
@@ -539,22 +566,6 @@ package mod_sim_exp_pkg is
       douta : out std_logic_vector(511 downto 0)
     );
   end component operands_sp;
-  
-  component stepping_logic is
-    generic(
-      n : integer := 1536; -- max nr of steps required to complete a multiplication
-      t : integer := 192 -- total nr of steps in the pipeline
-    );
-    port(
-      core_clk          : in  std_logic;
-      start             : in  std_logic;
-      reset             : in  std_logic;
-      t_sel             : in integer range 0 to t; -- nr of stages in the pipeline piece
-      n_sel             : in integer range 0 to n; -- nr of steps required for a complete multiplication
-      start_first_stage : out std_logic;
-      stepping_done     : out std_logic
-    );
-  end component stepping_logic;
   
   component systolic_pipeline is
     generic(
