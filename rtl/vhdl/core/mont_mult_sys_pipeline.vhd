@@ -96,7 +96,7 @@ architecture Structural of mont_mult_sys_pipeline is
   signal m_inv            : std_logic_vector(n-1 downto 0);
 
   signal next_x_i : std_logic;
-  signal x_i : std_logic;
+  signal xi : std_logic;
 begin
 
   -- x selection
@@ -113,7 +113,7 @@ begin
     load_x => load_x,
     next_x => next_x_i,
     p_sel  => p_sel,
-    x_i    => x_i
+    xi    => xi
   );
 
   -- precomputation of my (m+y)
@@ -169,7 +169,7 @@ begin
     my       => my,
     y        => xy,
     m        => m,
-    xi       => x_i,
+    xi       => xi,
     start    => start_multiplier,
     reset    => reset_multiplier,
     p_sel    => p_sel,
