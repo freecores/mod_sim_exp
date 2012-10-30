@@ -405,7 +405,7 @@ package mod_sim_exp_pkg is
       next_x : in  std_logic; -- next bit of x
       p_sel  : in  std_logic_vector(1 downto 0);  -- pipeline selection
       -- x operand bit out (serial)
-      x_i    : out std_logic  
+      xi     : out std_logic  
     );
   end component x_shift_reg;
   

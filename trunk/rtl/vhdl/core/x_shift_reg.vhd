@@ -67,7 +67,7 @@ entity x_shift_reg is
     next_x : in  std_logic; -- next bit of x
     p_sel  : in  std_logic_vector(1 downto 0);  -- pipeline selection
     -- x operand bit out (serial)
-    x_i    : out std_logic  
+    xi     : out std_logic  
   );
 end x_shift_reg;
 
@@ -94,7 +94,7 @@ begin
 	end process;
 
 	with p_sel select  -- pipeline select
-		x_i <= x_reg(offset) when "10", -- use bit at offset for high part of pipeline
-				   x_reg(0) when others;    -- use LS bit for lower part of pipeline
+		xi <= x_reg(offset) when "10", -- use bit at offset for high part of pipeline
+				  x_reg(0) when others;    -- use LS bit for lower part of pipeline
 
 end Behavioral;
