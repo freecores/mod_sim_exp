@@ -381,6 +381,34 @@ package mod_sim_exp_pkg is
     );
   end component stepping_logic;
 
+  --------------------------------------------------------------------
+  -- x_shift_reg
+  --------------------------------------------------------------------
+  --    shift register for the x operand of the multiplier
+  --    outputs the lsb of the register or bit at offset according to the
+  --    selected pipeline part 
+  -- 
+  component x_shift_reg is
+    generic(
+      n  : integer := 1536; -- width of the operands (# bits)
+      t  : integer := 48;   -- total number of stages
+      tl : integer := 16    -- lower number of stages
+    );
+    port(
+      -- clock input
+      clk    : in  std_logic;
+      -- x operand in (n-bit)
+      x_in   : in  std_logic_vector((n-1) downto 0);
+      -- control signals
+      reset  : in  std_logic; -- reset, clears register
+      load_x : in  std_logic; -- load operand into shift register   
+      next_x : in  std_logic; -- next bit of x
+      p_sel  : in  std_logic_vector(1 downto 0);  -- pipeline selection
+      -- x operand bit out (serial)
+      x_i    : out std_logic  
+    );
+  end component x_shift_reg;
+  
   component autorun_cntrl is
     port (
       clk              : in  std_logic;
@@ -587,22 +615,5 @@ package mod_sim_exp_pkg is
       r        : out std_logic_vector((n+1) downto 0)
     );
   end component systolic_pipeline;
-  
-  component x_shift_reg is
-    generic(
-      n  : integer := 1536;
-      t  : integer := 48;
-      tl : integer := 16
-    );
-    port(
-      clk    : in  std_logic;
-      reset  : in  std_logic;
-      x_in   : in  std_logic_vector((n-1) downto 0);
-      load_x : in  std_logic;
-      next_x : in  std_logic;
-      p_sel  : in  std_logic_vector(1 downto 0);
-      x_i    : out std_logic
-    );
-  end component x_shift_reg;
   
 end package mod_sim_exp_pkg;
