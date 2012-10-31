@@ -409,6 +409,42 @@ package mod_sim_exp_pkg is
     );
   end component x_shift_reg;
   
+  --------------------------------------------------------------------
+  -- systolic_pipeline
+  --------------------------------------------------------------------
+  --    systolic pipeline implementation of the montgommery multiplier
+  --    devides the pipeline into 2 parts, so 3 operand widths are supported
+  -- 
+  --    p_sel: 
+  --      01 = lower part
+  --      10 = upper part
+  --      11 = full range
+  component systolic_pipeline is
+    generic(
+      n  : integer := 1536; -- width of the operands (# bits)
+      t  : integer := 192;  -- total number of stages (divider of n) >= 2
+      tl : integer := 64    -- lower number of stages (best take t = sqrt(n))
+    );
+    port(
+      -- clock input
+      core_clk : in  std_logic;
+      -- modulus and y opperand input (n)-bit
+      my       : in  std_logic_vector((n) downto 0); -- m+y
+      y        : in  std_logic_vector((n-1) downto 0);
+      m        : in  std_logic_vector((n-1) downto 0);
+      -- x operand input (serial)
+      xi       : in  std_logic;
+      -- control signals
+      start    : in  std_logic; -- start multiplier
+      reset    : in  std_logic;
+      p_sel    : in  std_logic_vector(1 downto 0); -- select which piece of the multiplier will be used
+      ready    : out std_logic; -- multiplication ready
+      next_x   : out std_logic; -- next x operand bit
+      -- result out
+      r        : out std_logic_vector((n+1) downto 0)
+    );
+  end component systolic_pipeline;
+  
   component autorun_cntrl is
     port (
       clk              : in  std_logic;
@@ -594,26 +630,5 @@ package mod_sim_exp_pkg is
       douta : out std_logic_vector(511 downto 0)
     );
   end component operands_sp;
-  
-  component systolic_pipeline is
-    generic(
-      n  : integer := 1536; -- width of the operands (# bits)
-      t  : integer := 192;  -- number of stages (divider of n) >= 2
-      tl : integer := 64    -- best take t = sqrt(n)
-    );
-    port(
-      core_clk : in  std_logic;
-      my       : in  std_logic_vector((n) downto 0);
-      y        : in  std_logic_vector((n-1) downto 0);
-      m        : in  std_logic_vector((n-1) downto 0);
-      xi       : in  std_logic;
-      start    : in  std_logic;
-      reset    : in  std_logic;
-      p_sel    : in  std_logic_vector(1 downto 0); -- select which piece of the multiplier will be used
-      ready    : out std_logic;
-      next_x   : out std_logic;
-      r        : out std_logic_vector((n+1) downto 0)
-    );
-  end component systolic_pipeline;
   
 end package mod_sim_exp_pkg;
