@@ -52,6 +52,8 @@ library mod_sim_exp;
 use mod_sim_exp.mod_sim_exp_pkg.all;
 
 
+-- This module controls the montgommery mutliplier and controls traffic between
+-- RAM and multiplier. Also contains the autorun logic for exponentiations.
 entity mont_ctrl is
   port (
     clk   : in std_logic;
@@ -78,33 +80,20 @@ end mont_ctrl;
 
 
 architecture Behavioral of mont_ctrl is
-  signal start_delayed_i      : std_logic; -- delayed version of start input
-  signal start_pulse_i        : std_logic;
-  signal auto_start_pulse_i   : std_logic;
+  signal start_d      : std_logic; -- delayed version of start input
+  signal start_pulse        : std_logic;
+  signal auto_start_pulse   : std_logic;
   signal start_multiplier_i   : std_logic;
-  signal start_up_counter_i   : std_logic_vector(2 downto 0) := "100"; -- used in op_sel at multiplier start
-  signal auto_start_i         : std_logic := '0';
-  signal store_autorun_i      : std_logic;
-  signal run_auto_i           : std_logic;
-  signal run_auto_stored_i    : std_logic := '0';
-  signal single_start_pulse_i : std_logic;
+  signal start_up_counter   : std_logic_vector(2 downto 0) := "100"; -- used in op_sel at multiplier start
 
   signal calc_time_i : std_logic; -- high ('1') during multiplication
 
-  signal x_sel_i        : std_logic_vector(1 downto 0); -- the operand used as x input
-  signal y_sel_i        : std_logic_vector(1 downto 0); -- the operand used as y input
-  signal x_sel_buffer_i : std_logic_vector(1 downto 0); -- x operand as specified by fifo buffer (autorun)
+  signal x_sel        : std_logic_vector(1 downto 0); -- the operand used as x input
+  signal y_sel        : std_logic_vector(1 downto 0); -- the operand used as y input
+  signal x_sel_buffer : std_logic_vector(1 downto 0); -- x operand as specified by fifo buffer (autorun)
 
-  signal auto_done_i             : std_logic;
-  signal start_auto_i            : std_logic;
-  signal new_buf_part_i          : std_logic;
-  signal new_buf_word_i          : std_logic;
-  signal buf_part_i              : std_logic_vector(3 downto 0);
-  signal pop_i                   : std_logic;
-  signal start_autorun_cycle_i   : std_logic;
-  signal start_autorun_cycle_1_i : std_logic;
-  signal autorun_counter_i       : std_logic_vector(1 downto 0);
-  signal part_counter_i          : std_logic_vector(2 downto 0);
+  signal auto_done             : std_logic;
+  signal start_auto            : std_logic;
   signal auto_multiplier_done_i : std_logic;
 	
 begin
@@ -116,44 +105,48 @@ begin
 	START_PULSE_PROC: process(clk)
 	begin
 		if rising_edge(clk) then
-			start_delayed_i <= start;
+			start_d <= start;
 		end if;
 	end process START_PULSE_PROC;
-	start_pulse_i <= start and (not start_delayed_i);
-	single_start_pulse_i <= start_pulse_i and (not run_auto_i);
-	start_auto_i <= start_pulse_i and run_auto_i;
+	start_pulse <= start and (not start_d);
+	start_auto <= start_pulse and run_auto;
 
-	-- to start the multiplier we first need to select the y_operand and
-	-- clock it in the y_register
-	-- the we select the x_operand and start the multiplier
+	-- to start the multiplier we first need to select the x_operand and
+	-- clock it in the x shift register
+	-- the we select the y_operand and start the multiplier
+	
+	-- start_up_counter
+	--   default state : "100"
+	--   at start pulse counter resets to 0 and counts up to "100"
 	START_MULT_PROC: process(clk, reset)
 	begin
 		if reset = '1' then
-			start_up_counter_i <= "100";
+			start_up_counter <= "100";
 		elsif rising_edge(clk) then
-			if start_pulse_i = '1' or auto_start_pulse_i = '1' then
-				start_up_counter_i <= "000";
-			elsif start_up_counter_i(2) /= '1' then
-				start_up_counter_i <= start_up_counter_i + '1';
+			if start_pulse = '1' or auto_start_pulse = '1' then
+				start_up_counter <= "000";
+			elsif start_up_counter(2) /= '1' then
+				start_up_counter <= start_up_counter + '1';
 			else
-				start_up_counter_i <= "100";
+				start_up_counter <= "100";
 			end if;
 		else
-			start_up_counter_i <= start_up_counter_i;
+			start_up_counter <= start_up_counter;
 		end if;
 	end process;
 	
 	-- select operands (autorun/single run)
-	x_sel_i <= x_sel_buffer_i when (run_auto_i = '1') else x_sel_single;
-	y_sel_i <= "11" when (run_auto_i = '1') else y_sel_single; -- y is operand3 in auto mode
+	x_sel <= x_sel_buffer when (run_auto = '1') else x_sel_single;
+	y_sel <= "11" when (run_auto = '1') else y_sel_single; -- y is operand3 in auto mode
 	
-	-- clock operands to operand_mem output (first y, then x)
-	with start_up_counter_i(2 downto 1) select
-		op_sel <= y_sel_i when "00",
-		          x_sel_i when others;
-	load_x <= start_up_counter_i(0) and (not start_up_counter_i(1));
-	-- start multiplier
-	start_multiplier_i <= start_up_counter_i(1) and start_up_counter_i(0);
+	-- clock operands to operand_mem output (first x, then y)
+	with start_up_counter(2 downto 1) select
+		op_sel <= x_sel when "00",  -- start_up_counter="00x" (first 2 cycles)
+		          y_sel when others;  -- 
+	load_x <= start_up_counter(0) and (not start_up_counter(1)); -- latch x operand if start_up_counter="x01"
+	
+	-- start multiplier when start_up_counter="x11"
+	start_multiplier_i <= start_up_counter(1) and start_up_counter(0);
 	start_multiplier <= start_multiplier_i;
 
 	-- signal calc time is high during multiplication
@@ -177,42 +170,29 @@ begin
 	
 	-- what happens when a multiplication has finished
 	load_result <= multiplier_ready;
-	-- ignore multiplier_ready when in automode, the logic will assert auto_done_i when finished
-	done <= ((not run_auto_i) and multiplier_ready) or auto_done_i; 
+	-- ignore multiplier_ready when in automode, the logic will assert auto_done when finished
+	done <= ((not run_auto) and multiplier_ready) or auto_done; 
 	
 	-----------------------------------------------------------------------------------
 	-- Processes related to op_buffer cntrl and auto_run mode
-	-- start_auto_i     -> start autorun mode operation
+	-- start_auto     -> start autorun mode operation
 	-- auto_start_pulse <- autorun logic starts the multiplier
 	-- auto_done        <- autorun logic signals when autorun operation has finished
-	-- x_sel_buffer_i   <- autorun logic determines which operand is used as x
+	-- x_sel_buffer   <- autorun logic determines which operand is used as x
 	
 	-- check buffer empty signal
 	-----------------------------------------------------------------------------------
-	
-	-- at the beginning of each new multiplication we store the current autorun bit
---	STORE_AUTORUN_PROC: process(clk)
---	begin
---		if rising_edge(clk) then
---			if store_autorun_i = '1' then
---				run_auto_stored_i <= run_auto;
---			else
---				run_auto_stored_i <= run_auto_stored_i;
---			end if;
---		end if;
---	end process STORE_AUTORUN_PROC;
-	run_auto_i <= run_auto;
-	
+
 	-- multiplier_ready is only passed to autorun control when in autorun mode
-	auto_multiplier_done_i <= (multiplier_ready and run_auto_i);
+	auto_multiplier_done_i <= (multiplier_ready and run_auto);
 	
   autorun_control_logic : autorun_cntrl port map(
     clk              => clk,
     reset            => reset,
-    start            => start_auto_i,
-    done             => auto_done_i,
-    op_sel           => x_sel_buffer_i,
-    start_multiplier => auto_start_pulse_i,
+    start            => start_auto,
+    done             => auto_done,
+    op_sel           => x_sel_buffer,
+    start_multiplier => auto_start_pulse,
     multiplier_done  => auto_multiplier_done_i,
     read_buffer      => read_buffer,
     buffer_din       => op_sel_buffer,
