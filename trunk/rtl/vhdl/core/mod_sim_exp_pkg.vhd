@@ -445,6 +445,42 @@ package mod_sim_exp_pkg is
     );
   end component systolic_pipeline;
   
+  --------------------------------------------------------------------
+  -- mont_mult_sys_pipeline
+  --------------------------------------------------------------------
+  -- Structural description of the montgommery multiply pipeline
+  -- contains the x operand shift register, my adder, the pipeline and 
+  -- reduction adder. To do a multiplication, the following actions must take place:
+  -- 
+  --    * load in the x operand in the shift register using the xy bus and load_x
+  --    * place the y operand on the xy bus for the rest of the operation
+  --    * generate a start pulse of 1 clk cycle long on start
+  --    * wait for ready signal
+  --    * result is avaiable on the r bus
+  -- 
+  component mont_mult_sys_pipeline is
+    generic (
+      n          : integer := 1536; -- width of the operands
+      nr_stages  : integer := 96; -- total number of stages
+      stages_low : integer := 32  -- lower number of stages
+    );
+    port (
+      -- clock input
+      core_clk : in std_logic;
+      -- operand inputs
+      xy       : in std_logic_vector((n-1) downto 0); -- bus for x or y operand
+      m        : in std_logic_vector((n-1) downto 0); -- modulus
+      -- result output
+      r        : out std_logic_vector((n-1) downto 0);  -- result
+      -- control signals
+      start    : in std_logic;
+      reset    : in std_logic;
+      p_sel    : in std_logic_vector(1 downto 0);
+      load_x   : in std_logic;
+      ready    : out std_logic
+    );
+  end component mont_mult_sys_pipeline;
+
   component autorun_cntrl is
     port (
       clk              : in  std_logic;
@@ -508,25 +544,6 @@ package mod_sim_exp_pkg is
       multiplier_ready : in std_logic
     );
   end component mont_ctrl;
-  
-  component mont_mult_sys_pipeline is
-    generic (
-      n          : integer := 1536;
-      nr_stages  : integer := 96; --(divides n, bits_low & (n-bits_low))
-      stages_low : integer := 32
-    );
-    port (
-      core_clk : in std_logic;
-      xy       : in std_logic_vector((n-1) downto 0);
-      m        : in std_logic_vector((n-1) downto 0);
-      r        : out std_logic_vector((n-1) downto 0);
-      start    : in std_logic;
-      reset    : in std_logic;
-      p_sel    : in std_logic_vector(1 downto 0);
-      load_x   : in std_logic;
-      ready    : out std_logic
-    );
-  end component mont_mult_sys_pipeline;
   
   component multiplier_core is
     port(
