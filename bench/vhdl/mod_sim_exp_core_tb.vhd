@@ -1,5 +1,5 @@
 ----------------------------------------------------------------------  
-----  testbenchtrl                                                ---- 
+----  mod_sim_exp_core_tb                                               ---- 
 ----                                                              ---- 
 ----  This file is part of the                                    ----
 ----    Modular Simultaneous Exponentiation Core project          ---- 
@@ -59,10 +59,10 @@ use ieee.std_logic_textio.all;
 library mod_sim_exp;
 use mod_sim_exp.mod_sim_exp_pkg.all;
 
-entity tb_multiplier_core is
-end tb_multiplier_core;
+entity mod_sim_exp_core_tb is
+end mod_sim_exp_core_tb;
 
-architecture test of tb_multiplier_core is
+architecture test of mod_sim_exp_core_tb is
   constant nr_stages  : integer := 96;
   constant clk_period : time := 10 ns;
   signal clk          : std_logic := '0';
@@ -655,7 +655,7 @@ end process;
 ------------------------------------------
 -- Multiplier core instance
 ------------------------------------------
-the_multiplier : mod_sim_exp.mod_sim_exp_pkg.multiplier_core
+the_multiplier : mod_sim_exp.mod_sim_exp_pkg.mod_sim_exp_core
 port map(
   clk   => clk,
   reset => reset,

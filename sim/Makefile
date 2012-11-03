@@ -22,7 +22,7 @@ CORE_SRC =$(HDL_DIR)/core/mod_sim_exp_pkg.vhd \
 		 $(HDL_DIR)/core/modulus_ram.vhd \
 		 $(HDL_DIR)/core/mont_ctrl.vhd \
 		 $(HDL_DIR)/core/mont_mult_sys_pipeline.vhd \
-		 $(HDL_DIR)/core/multiplier_core.vhd \
+		 $(HDL_DIR)/core/mod_sim_exp_core.vhd \
 		 $(HDL_DIR)/core/operand_dp.vhd \
 		 $(HDL_DIR)/core/operand_mem.vhd \
 		 $(HDL_DIR)/core/operand_ram.vhd \
@@ -40,7 +40,7 @@ CORE_SRC =$(HDL_DIR)/core/mod_sim_exp_pkg.vhd \
 # Testbench HDL file
 ##
 TB_SRC_DIR = ../bench/vhdl/
-TB_SRC =  $(TB_SRC_DIR)tb_multiplier_core.vhd 
+TB_SRC =  $(TB_SRC_DIR)mod_sim_exp_core_tb.vhd 
 
 #######################################
 all: mod_sim_exp
@@ -69,4 +69,4 @@ mod_sim_exp_tb: work_lib
 	vcom $(VCOMOPS) -work work $(TB_SRC)
 
 mod_sim_exp: mod_sim_exp_com mod_sim_exp_tb 
-	vsim -c -do mod_sim_exp.do -lib work tb_multiplier_core
+	vsim -c -do mod_sim_exp.do -lib work mod_sim_exp_core_tb

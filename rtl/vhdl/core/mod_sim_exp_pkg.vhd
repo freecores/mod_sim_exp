@@ -481,6 +481,40 @@ package mod_sim_exp_pkg is
     );
   end component mont_mult_sys_pipeline;
 
+  --------------------------------------------------------------------
+  -- mod_sim_exp_core
+  --------------------------------------------------------------------
+  --    toplevel of the modular simultaneous exponentiation core
+  --    contains an operand and modulus ram, multiplier, an exponent fifo
+  --    and control logic
+  -- 
+  component mod_sim_exp_core is
+    port(
+      clk   : in  std_logic;
+      reset : in  std_logic;
+        -- operand memory interface (plb shared memory)
+      write_enable : in  std_logic; -- write data to operand ram
+      data_in      : in  std_logic_vector (31 downto 0);  -- operand ram data in
+      rw_address   : in  std_logic_vector (8 downto 0);   -- operand ram address bus
+      data_out     : out std_logic_vector (31 downto 0);  -- operand ram data out
+      collision    : out std_logic; -- write collision
+        -- op_sel fifo interface
+      fifo_din    : in  std_logic_vector (31 downto 0); -- exponent fifo data in
+      fifo_push   : in  std_logic;  -- push data in exponent fifo
+      fifo_full   : out std_logic;  -- high if fifo is full
+      fifo_nopush : out std_logic;  -- high if error during push
+        -- control signals
+      start          : in  std_logic; -- start multiplication/exponentiation
+      run_auto       : in  std_logic; -- single multiplication if low, exponentiation if high
+      ready          : out std_logic; -- calculations done
+      x_sel_single   : in  std_logic_vector (1 downto 0); -- single multiplication x operand selection
+      y_sel_single   : in  std_logic_vector (1 downto 0); -- single multiplication y operand selection
+      dest_op_single : in  std_logic_vector (1 downto 0); -- result destination operand selection
+      p_sel          : in  std_logic_vector (1 downto 0); -- pipeline part selection
+      calc_time      : out std_logic
+    );
+  end component mod_sim_exp_core;
+
   component autorun_cntrl is
     port (
       clk              : in  std_logic;
@@ -544,33 +578,6 @@ package mod_sim_exp_pkg is
       multiplier_ready : in std_logic
     );
   end component mont_ctrl;
-  
-  component multiplier_core is
-    port(
-      clk   : in  std_logic;
-      reset : in  std_logic;
-        -- operand memory interface (plb shared memory)
-      write_enable : in  std_logic;
-      data_in      : in  std_logic_vector (31 downto 0);
-      rw_address   : in  std_logic_vector (8 downto 0);
-      data_out     : out std_logic_vector (31 downto 0);
-      collision    : out std_logic;
-        -- op_sel fifo interface
-      fifo_din    : in  std_logic_vector (31 downto 0);
-      fifo_push   : in  std_logic;
-      fifo_full   : out std_logic;
-      fifo_nopush : out std_logic;
-        -- ctrl signals
-      start          : in  std_logic;
-      run_auto       : in  std_logic;
-      ready          : out std_logic;
-      x_sel_single   : in  std_logic_vector (1 downto 0);
-      y_sel_single   : in  std_logic_vector (1 downto 0);
-      dest_op_single : in  std_logic_vector (1 downto 0);
-      p_sel          : in  std_logic_vector (1 downto 0);
-      calc_time      : out std_logic
-    );
-  end component multiplier_core;
   
   component operand_dp is
     port (
