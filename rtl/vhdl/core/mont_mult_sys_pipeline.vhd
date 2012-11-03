@@ -1,5 +1,5 @@
 ----------------------------------------------------------------------  
-----  mont_mult_sys_pipline                                       ---- 
+----  mont_mult_sys_pipeline                                       ---- 
 ----                                                              ---- 
 ----  This file is part of the                                    ----
 ----    Modular Simultaneous Exponentiation Core project          ---- 
@@ -56,17 +56,31 @@ library mod_sim_exp;
 use mod_sim_exp.mod_sim_exp_pkg.all;
 
 
+-- Structural description of the montgommery multiply pipeline
+-- contains the x operand shift register, my adder, the pipeline and 
+-- reduction adder. To do a multiplication, the following actions must take place:
+-- 
+--    * load in the x operand in the shift register using the xy bus and load_x
+--    * place the y operand on the xy bus for the rest of the operation
+--    * generate a start pulse of 1 clk cycle long on start
+--    * wait for ready signal
+--    * result is avaiable on the r bus
+-- 
 entity mont_mult_sys_pipeline is
   generic (
-    n          : integer := 1536;
-    nr_stages  : integer := 96; --(divides n, bits_low & (n-bits_low))
-    stages_low : integer := 32
+    n          : integer := 1536; -- width of the operands
+    nr_stages  : integer := 96; -- total number of stages
+    stages_low : integer := 32  -- lower number of stages
   );
   port (
+    -- clock input
     core_clk : in std_logic;
-    xy       : in std_logic_vector((n-1) downto 0);
-    m        : in std_logic_vector((n-1) downto 0);
-    r        : out std_logic_vector((n-1) downto 0);
+    -- operand inputs
+    xy       : in std_logic_vector((n-1) downto 0); -- bus for x or y operand
+    m        : in std_logic_vector((n-1) downto 0); -- modulus
+    -- result output
+    r        : out std_logic_vector((n-1) downto 0);  -- result
+    -- control signals
     start    : in std_logic;
     reset    : in std_logic;
     p_sel    : in std_logic_vector(1 downto 0);
@@ -74,7 +88,6 @@ entity mont_mult_sys_pipeline is
     ready    : out std_logic
   );
 end mont_mult_sys_pipeline;
-
 
 architecture Structural of mont_mult_sys_pipeline is
   constant stage_width : integer := n/nr_stages;
@@ -95,11 +108,12 @@ architecture Structural of mont_mult_sys_pipeline is
   signal start_multiplier : std_logic;
   signal m_inv            : std_logic_vector(n-1 downto 0);
 
-  signal next_x_i : std_logic;
+  signal next_xi : std_logic;
   signal xi : std_logic;
 begin
 
-  -- x selection
+  -- register to store the x value in 
+  -- outputs the operand in serial using a shift register 
   x_selection : x_shift_reg
   generic map(
     n  => n,
@@ -111,12 +125,13 @@ begin
     reset  => reset,
     x_in   => xy,
     load_x => load_x,
-    next_x => next_x_i,
+    next_x => next_xi,
     p_sel  => p_sel,
-    xi    => xi
+    xi     => xi
   );
 
   -- precomputation of my (m+y)
+  -- lower part of pipeline
   my_adder_l : adder_n
   generic map(
     width       => bits_l,
@@ -130,7 +145,7 @@ begin
     cout     => my_l_cout,
     r        => my((bits_l-1) downto 0)
   );
-	
+	--higher part of pipeline
   my_adder_h : adder_n
   generic map(
     width       => bits_h,
@@ -144,12 +159,15 @@ begin
     cout     => my(n),
     r        => my((n-1) downto bits_l)
   );
-
+  
+  -- if higher pipeline selected, do not give through carry, but 0
 	my_h_cin <= '0' when (p_sel(1) and (not p_sel(0)))='1' else my_l_cout;
 	
-	-- multiplication	
+	-- multiplication
+	-- multiplier is reset every calculation or reset
 	reset_multiplier <= reset or start;
 
+  -- start is delayed 1 cycle
   delay_1_cycle : d_flip_flop
   port map(
     core_clk => core_clk,
@@ -173,14 +191,17 @@ begin
     start    => start_multiplier,
     reset    => reset_multiplier,
     p_sel    => p_sel,
-    ready    => ready, -- misschien net iets te vroeg?
-    next_x   => next_x_i,
+    ready    => ready,
+    next_x   => next_xi,
     r        => r_pipeline
   );
 	
 	-- post-computation (reduction)
+	-- if the result is greater than the modulus, a final reduction with m is needed
+	-- this is done by using an adder and the 2s complement of m
 	m_inv <= not(m);
 	
+	-- calculate r_l - m_l
   reduction_adder_l : adder_n
   generic map(
     width       => bits_l,
@@ -190,14 +211,15 @@ begin
     core_clk => core_clk,
     a        => m_inv((bits_l-1) downto 0),
     b        => r_pipeline((bits_l-1) downto 0),
-    cin      => '1',
+    cin      => '1', -- +1 for 2s complement
     cout     => c_red_l(0),
     r        => r_red((bits_l-1) downto 0)
   );
-
+  
+  -- pipeline result may be greater, check following bits
   reduction_adder_l_a : cell_1b_adder
   port map(
-    a    => '1',
+    a    => '1', -- for 2s complement of m
     b    => r_pipeline(bits_l),
     cin  => c_red_l(0),
     cout => c_red_l(1)
@@ -206,15 +228,15 @@ begin
 
   reduction_adder_l_b : cell_1b_adder
   port map(
-    a     => '1',
+    a     => '1', -- for 2s complement of m
     b     => r_pipeline(bits_l+1),
     cin   => c_red_l(1),
     cout  => c_red_l(2)
     -- r => 
   );
-	
-	--cin_red_h <= p_sel(1) and (not p_sel(0));
-	cin_red_h <= c_red_l(0) when p_sel(0) = '1' else '1';
+
+  -- pass cout from lower stages if full pipeline selected, else '1' (+1 for 2s complement)
+  cin_red_h <= c_red_l(0) when p_sel(0) = '1' else '1';
 	
   reduction_adder_h : adder_n
   generic map(
@@ -229,10 +251,11 @@ begin
     cout     => c_red_h(0),
     r        => r_red((n-1) downto bits_l)
   );
-
+  
+  -- pipeline result may be greater, check following bits
   reduction_adder_h_a : cell_1b_adder
   port map(
-    a     => '1',
+    a     => '1', -- for 2s complement of m
     b     => r_pipeline(n),
     cin   => c_red_h(0),
     cout  => c_red_h(1)
@@ -240,15 +263,16 @@ begin
 
   reduction_adder_h_b : cell_1b_adder
   port map(
-    a     => '1',
+    a     => '1', -- for 2s complement of m
     b     => r_pipeline(n+1),
     cin   => c_red_h(1),
     cout  => c_red_h(2)
   );
   
-	r_sel <= (c_red_h(2) and p_sel(1)) or (c_red_l(2) and (p_sel(0) and (not p_sel(1))));
-	r_i <= r_red when r_sel = '1' else r_pipeline((n-1) downto 0);
-	
-	-- output
-	r <= r_i;
+  -- select the correct result
+  r_sel <= (c_red_h(2) and p_sel(1)) or (c_red_l(2) and (p_sel(0) and (not p_sel(1))));
+  r_i <= r_red when r_sel = '1' else r_pipeline((n-1) downto 0);
+  
+  -- output
+  r <= r_i;
 end Structural;
