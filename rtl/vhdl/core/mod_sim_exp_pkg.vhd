@@ -655,4 +655,96 @@ package mod_sim_exp_pkg is
     );
   end component operands_sp;
   
+  
+  component sys_stage is
+    generic(
+      width : integer := 32 -- width of the stage
+    );
+    port(
+      -- clock input
+      core_clk : in  std_logic;
+      -- modulus and y operand input (width)-bit
+      y        : in  std_logic_vector((width-1) downto 0);
+      m        : in  std_logic_vector((width) downto 0);
+      my_cin   : in  std_logic;
+      my_cout  : out std_logic;
+      -- q and x operand input (serial input)
+      xin      : in  std_logic;
+      qin      : in  std_logic;
+      -- q and x operand output (serial output)
+      xout     : out std_logic;
+      qout     : out std_logic;
+      -- msb input (lsb from next stage, for shift right operation)
+      a_msb    : in  std_logic;
+      a_0      : out std_logic;
+      -- carry out(clocked) and in
+      cin      : in  std_logic;
+      cout     : out std_logic;
+      -- reduction adder carry's
+      red_cin  : in std_logic;
+      red_cout : out std_logic;
+      -- control singals
+      start    : in  std_logic;
+      reset    : in  std_logic;
+      done     : out std_logic;
+      -- result out
+      r_sel    : in  std_logic; -- result selection: 0 -> pipeline result, 1 -> reducted result
+      r        : out std_logic_vector((width-1) downto 0)
+    );
+  end component sys_stage;
+  
+  
+  --------------------------------------------------------------------
+  -- sys_pipeline
+  -------------------------------------------------------------------- 
+  --    the pipelined systolic array for a montgommery multiplier
+  --    contains a structural description of the pipeline using the systolic stages
+  -- 
+  component sys_pipeline is
+    generic(
+      n  : integer := 1536; -- width of the operands (# bits)
+      t  : integer := 192;  -- total number of stages (divider of n) >= 2
+      tl : integer := 64    -- lower number of stages (best take t = sqrt(n))
+    );
+    port(
+      -- clock input
+      core_clk : in  std_logic;
+      -- modulus and y opperand input (n)-bit
+      y        : in  std_logic_vector((n-1) downto 0);
+      m        : in  std_logic_vector((n-1) downto 0);
+      -- x operand input (serial)
+      xi       : in  std_logic;
+      next_x   : out std_logic; -- next x operand bit
+      -- control signals
+      start    : in  std_logic; -- start multiplier
+      reset    : in  std_logic;
+      p_sel    : in  std_logic_vector(1 downto 0); -- select which piece of the pipeline will be used
+      -- result out
+      r        : out std_logic_vector((n-1) downto 0)
+    );
+  end component sys_pipeline;
+  
+  component mont_multiplier is
+  generic (
+    n          : integer := 1536; -- width of the operands
+    nr_stages  : integer := 96; -- total number of stages
+    stages_low : integer := 32  -- lower number of stages
+  );
+  port (
+    -- clock input
+    core_clk : in std_logic;
+    -- operand inputs
+    xy       : in std_logic_vector((n-1) downto 0); -- bus for x or y operand
+    m        : in std_logic_vector((n-1) downto 0); -- modulus
+    -- result output
+    r        : out std_logic_vector((n-1) downto 0);  -- result
+    -- control signals
+    start    : in std_logic;
+    reset    : in std_logic;
+    p_sel    : in std_logic_vector(1 downto 0);
+    load_x   : in std_logic;
+    ready    : out std_logic
+  );
+  end component mont_multiplier;
+  
 end package mod_sim_exp_pkg;
