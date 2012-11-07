@@ -103,10 +103,19 @@ architecture Structural of sys_pipeline is
   signal done_stage    : std_logic_vector((t-1) downto 0);
   signal r_sel         : std_logic;
 
-  -- first cell signals
-  signal my0_mux_result : std_logic;
-  signal my0 : std_logic;
+  -- mid end signals
+  signal a_0_midend : std_logic;
+  signal r_sel_midend : std_logic;
   
+  -- mid start signals
+  signal my_cout_midstart : std_logic;
+  signal xout_midstart : std_logic;
+  signal qout_midstart : std_logic;
+  signal cout_midstart : std_logic;
+  signal red_cout_midstart : std_logic;
+  
+  -- end signals
+  signal r_sel_end : std_logic;
 begin
 
   m_i <= '0' & m;
@@ -142,20 +151,11 @@ begin
     );
   end generate;
   
-  -- link stages to eachother
-  stage_connect : for i in 1 to (t-1) generate
-    my_cin_stage(i) <= my_cout_stage(i-1);
-    cin_stage(i) <= cout_stage(i-1);
-    xin_stage(i) <= xout_stage(i-1);
-    qin_stage(i) <= qout_stage(i-1);
-    red_cin_stage(i) <= red_cout_stage(i-1);
-    start_stage(i) <= done_stage(i-1);
-    a_msb_stage(i-1) <= a_0_stage(i);
-  end generate;
+  
   
   -- first cell logic
   --------------------
-  first_stage : sys_first_cell_logic
+  first_cell : sys_first_cell_logic
   port map (
     m0       => m_i(0),
     y0       => y_i(0),
@@ -168,8 +168,90 @@ begin
     red_cout => red_cin_stage(0)
   );
   
-  start_stage(0) <= start;
-  next_x <= done_stage(0);
+  -- only start first stage if lower part is used
+  with p_sel select
+    start_stage(0) <= '0' when "10",
+                      start when others;
+  
+  with p_sel select
+    next_x <= done_stage(tl) when "10",
+              done_stage(0) when others;
+  
+  -- link lower stages to eachother
+  stage_connect_l : for i in 1 to (tl-1) generate
+    my_cin_stage(i) <= my_cout_stage(i-1);
+    cin_stage(i) <= cout_stage(i-1);
+    xin_stage(i) <= xout_stage(i-1);
+    qin_stage(i) <= qout_stage(i-1);
+    red_cin_stage(i) <= red_cout_stage(i-1);
+    start_stage(i) <= done_stage(i-1);
+    a_msb_stage(i-1) <= a_0_stage(i);
+  end generate;
+  
+  -- mid end logic
+  -----------------
+  mid_end_cell : sys_last_cell_logic
+  port map (
+    core_clk => core_clk,
+    reset    => reset,
+    a_0      => a_0_midend,
+    cin      => cout_stage(tl-1),
+    red_cin  => red_cout_stage(tl-1),
+    r_sel    => r_sel_midend,
+    start    => done_stage(tl-1)
+  );
+  --muxes for midend signals
+  with p_sel select
+    a_msb_stage(tl-1) <= a_0_midend when "01",
+                         a_0_stage(tl) when others;
+  
+  -- mid start logic
+  -------------------
+  mid_start_logic : sys_first_cell_logic
+  port map (
+    m0       => m_i(tl*s),
+    y0       => y_i(tl*s),
+    my_cout  => my_cout_midstart,
+    xi       => xi,
+    xout     => xout_midstart,
+    qout     => qout_midstart,
+    cout     => cout_midstart,
+    a_0      => a_0_stage(tl),
+    red_cout => red_cout_midstart
+  );
+  
+  -- only start stage tl if only higher part is used
+  with p_sel select
+    start_stage(tl) <= start when "10",
+                       done_stage(tl-1) when "11",
+                       '0' when others;
+                      
+  with p_sel select
+    my_cin_stage(tl) <= my_cout_midstart when "10",
+                        my_cout_stage(tl-1) when others;
+  with p_sel select
+    xin_stage(tl) <= xout_midstart when "10",
+                     xout_stage(tl-1) when others;
+  with p_sel select
+    qin_stage(tl) <= qout_midstart when "10",
+                     qout_stage(tl-1) when others;
+  with p_sel select
+    cin_stage(tl) <= cout_midstart when "10",
+                     cout_stage(tl-1) when others;
+  with p_sel select
+    red_cin_stage(tl) <= red_cout_midstart when "10",
+                         red_cout_stage(tl-1) when others;
+  
+    -- link higher stages to eachother
+  stage_connect_h : for i in (tl+1) to (t-1) generate
+    my_cin_stage(i) <= my_cout_stage(i-1);
+    cin_stage(i) <= cout_stage(i-1);
+    xin_stage(i) <= xout_stage(i-1);
+    qin_stage(i) <= qout_stage(i-1);
+    red_cin_stage(i) <= red_cout_stage(i-1);
+    start_stage(i) <= done_stage(i-1);
+    a_msb_stage(i-1) <= a_0_stage(i);
+  end generate;
   
   -- last cell logic
   -------------------
@@ -180,8 +262,11 @@ begin
     a_0      => a_msb_stage(t-1),
     cin      => cout_stage(t-1),
     red_cin  => red_cout_stage(t-1),
-    r_sel    => r_sel,
+    r_sel    => r_sel_end,
     start    => done_stage(t-1)
   );
   
+  with p_sel select
+    r_sel <= r_sel_midend when "01",
+             r_sel_end when others;
 end Structural;

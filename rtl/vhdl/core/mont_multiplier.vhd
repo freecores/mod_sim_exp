@@ -87,10 +87,17 @@ entity mont_multiplier is
 end mont_multiplier;
 
 architecture Structural of mont_multiplier is
+  constant t  : integer := nr_stages;
+  constant tl : integer := stages_low;
   constant s  : integer := n/nr_stages;   -- stage width (# bits)
+  constant nl : integer := s*tl;  -- lower pipeline width (# bits)
+  constant nh : integer :=  n - nl; -- higher pipeline width (# bits)
   
   signal reset_multiplier : std_logic;
   signal start_multiplier : std_logic;
+  
+  signal t_sel  : integer range 0 to t;  -- width in stages of selected pipeline part
+  signal n_sel  : integer range 0 to n;  -- width in bits of selected pipeline part
   
   signal next_xi : std_logic;
   signal xi : std_logic;
@@ -129,6 +136,19 @@ begin
     xi     => xi
   );
   
+  -- this module controls the pipeline operation
+  --   width in stages for selected pipeline
+  with p_sel select
+    t_sel <=    tl when "01",   -- lower pipeline part
+              t-tl when "10",   -- higher pipeline part
+                 t when others; -- full pipeline
+
+  --   width in bits for selected pipeline
+  with p_sel select
+    n_sel <= nl-1 when "01",  -- lower pipeline part
+             nh-1 when "10",  -- higher pipeline part
+             n-1 when others; -- full pipeline
+  
   -- stepping control logic to keep track off the multiplication and when it is done
   stepping_control : stepping_logic
   generic map(
@@ -139,8 +159,8 @@ begin
     core_clk          => core_clk,
     start             => start_multiplier,
     reset             => reset_multiplier,
-    t_sel             => nr_stages,
-    n_sel             => n-1,
+    t_sel             => t_sel,
+    n_sel             => n_sel,
     start_first_stage => start_first_stage,
     stepping_done     => ready
   );
