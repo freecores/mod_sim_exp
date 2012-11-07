@@ -114,7 +114,7 @@ architecture Structural of mod_sim_exp_core is
 begin
 
   -- The actual multiplier
-  the_multiplier : mont_mult_sys_pipeline
+  the_multiplier : mont_multiplier
   generic map(
     n          => n,
     nr_stages  => t, --(divides n, bits_low & (n-bits_low))

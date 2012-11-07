@@ -85,6 +85,8 @@ architecture Structural of sys_pipeline is
   
   signal m_i           : std_logic_vector(n downto 0);
   signal y_i           : std_logic_vector(n downto 0);
+  signal r_sel_l : std_logic;
+  signal r_sel_h : std_logic;
   
   -- systolic stages signals
   signal my_cin_stage  : std_logic_vector((t-1) downto 0);
@@ -101,7 +103,7 @@ architecture Structural of sys_pipeline is
   signal red_cout_stage : std_logic_vector((t-1) downto 0);
   signal start_stage   : std_logic_vector((t-1) downto 0);
   signal done_stage    : std_logic_vector((t-1) downto 0);
-  signal r_sel         : std_logic;
+  signal r_sel_stage   : std_logic_vector((t-1) downto 0);
 
   -- mid end signals
   signal a_0_midend : std_logic;
@@ -146,12 +148,10 @@ begin
       start    => start_stage(i),
       reset    => reset,
       done     => done_stage(i),
-      r_sel    => r_sel,
+      r_sel    => r_sel_stage(i),
       r        => r(((i+1)*s)-1 downto (i*s))
     );
   end generate;
-  
-  
   
   -- first cell logic
   --------------------
@@ -186,7 +186,9 @@ begin
     red_cin_stage(i) <= red_cout_stage(i-1);
     start_stage(i) <= done_stage(i-1);
     a_msb_stage(i-1) <= a_0_stage(i);
+    r_sel_stage(i) <= r_sel_l;
   end generate;
+    r_sel_stage(0) <= r_sel_l;
   
   -- mid end logic
   -----------------
@@ -251,8 +253,10 @@ begin
     red_cin_stage(i) <= red_cout_stage(i-1);
     start_stage(i) <= done_stage(i-1);
     a_msb_stage(i-1) <= a_0_stage(i);
+    r_sel_stage(i) <= r_sel_h;
   end generate;
-  
+    r_sel_stage(tl) <= r_sel_h;
+    
   -- last cell logic
   -------------------
   last_cell : sys_last_cell_logic
@@ -267,6 +271,12 @@ begin
   );
   
   with p_sel select
-    r_sel <= r_sel_midend when "01",
-             r_sel_end when others;
+    r_sel_l <= r_sel_midend when "01",
+               r_sel_end when "11",
+               '0' when others;
+               
+  with p_sel select
+    r_sel_h <= '0' when "01",
+               r_sel_end when others;           
+  
 end Structural;
