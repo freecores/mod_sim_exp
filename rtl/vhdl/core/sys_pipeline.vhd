@@ -107,12 +107,6 @@ architecture Structural of sys_pipeline is
   signal my0_mux_result : std_logic;
   signal my0 : std_logic;
   
-  -- last cell signals
-  signal a_high : std_logic_vector(1 downto 0);
-  signal a_high_reg : std_logic_vector(1 downto 0);
-  signal red_cout_end : std_logic_vector(1 downto 0);
-  
-  
 begin
 
   m_i <= '0' & m;
@@ -184,41 +178,15 @@ begin
   
   -- last cell logic
   -------------------
-  -- half adder: cout_stage(t-1) + a_high_reg(1)
-  a_high(0) <= cout_stage(t-1) xor a_high_reg(1); --result
-  a_high(1) <= cout_stage(t-1) and a_high_reg(1); --cout
-  
-  a_msb_stage(t-1) <= a_high_reg(0);
-  
-  last_reg : register_n
-  generic map(
-    width => 2
-  )
-  port map(
+  last_cell : sys_last_cell_logic
+  port map (
     core_clk => core_clk,
-    ce       => done_stage(t-1),
     reset    => reset,
-    din      => a_high,
-    dout     => a_high_reg
+    a_0      => a_msb_stage(t-1),
+    cin      => cout_stage(t-1),
+    red_cin  => red_cout_stage(t-1),
+    r_sel    => r_sel,
+    start    => done_stage(t-1)
   );
-  
-  -- reduction finishing last 2 bits
-  reduction_adder_a : cell_1b_adder
-  port map(
-    a     => '1', -- for 2s complement of m
-    b     => a_high_reg(0),
-    cin   => red_cout_stage(t-1),
-    cout  => red_cout_end(0)
-  );
-
-  reduction_adder_b : cell_1b_adder
-  port map(
-    a     => '1', -- for 2s complement of m
-    b     => a_high_reg(1),
-    cin   => red_cout_end(0),
-    cout  => red_cout_end(1)
-  );
-  
-  r_sel <= red_cout_end(1);
   
 end Structural;

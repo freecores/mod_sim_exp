@@ -692,7 +692,25 @@ package mod_sim_exp_pkg is
       r        : out std_logic_vector((width-1) downto 0)
     );
   end component sys_stage;
-  
+
+  --------------------------------------------------------------------
+  -- sys_last_cell_logic
+  --------------------------------------------------------------------   
+  --    logic needed as the last piece in the systolic array pipeline
+  --    calculates the last 2 bits of the cell_result and finishes the reduction
+  --    also generates the result selection signal
+  -- 
+  component sys_last_cell_logic is
+    port  (
+      core_clk : in std_logic;    -- clock input
+      reset    : in std_logic;    
+      a_0      : out std_logic;   -- a_msb for last stage
+      cin      : in std_logic;    -- cout from last stage
+      red_cin  : in std_logic;    -- red_cout from last stage
+      r_sel    : out std_logic;   -- result selection bit
+      start    : in std_logic     -- done signal from last stage
+    );
+  end component sys_last_cell_logic;
   
   --------------------------------------------------------------------
   -- sys_pipeline
