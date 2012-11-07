@@ -713,6 +713,26 @@ package mod_sim_exp_pkg is
   end component sys_last_cell_logic;
   
   --------------------------------------------------------------------
+  -- sys_first_cell_logic
+  --------------------------------------------------------------------     
+  --    logic needed as the first piece in the systolic array pipeline
+  --    calculates the first my_cout and generates q signal
+  -- 
+  component sys_first_cell_logic is
+    port  (
+      m0       : in std_logic;    -- lsb from m operand
+      y0       : in std_logic;    -- lsb from y operand
+      my_cout  : out std_logic;   -- my_cin for first stage
+      xi       : in std_logic;    -- xi operand input
+      xout     : out std_logic;   -- xin for first stage
+      qout     : out std_logic;   -- qin for first stage
+      cout     : out std_logic;   -- cin for first stage
+      a_0      : in std_logic;    -- a_0 from first stage
+      red_cout : out std_logic    -- red_cin for first stage
+    );
+  end component sys_first_cell_logic;
+
+  --------------------------------------------------------------------
   -- sys_pipeline
   -------------------------------------------------------------------- 
   --    the pipelined systolic array for a montgommery multiplier

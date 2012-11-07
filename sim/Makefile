@@ -36,6 +36,7 @@ CORE_SRC =$(HDL_DIR)/core/mod_sim_exp_pkg.vhd \
 		 $(HDL_DIR)/core/x_shift_reg.vhd \
 		 $(HDL_DIR)/core/sys_stage.vhd \
 		 $(HDL_DIR)/core/sys_last_cell_logic.vhd \
+		 $(HDL_DIR)/core/sys_first_cell_logic.vhd \
 		 $(HDL_DIR)/core/sys_pipeline.vhd \
 		 $(HDL_DIR)/core/mont_multiplier.vhd \
 

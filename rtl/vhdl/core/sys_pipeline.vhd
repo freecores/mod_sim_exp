@@ -155,25 +155,20 @@ begin
   
   -- first cell logic
   --------------------
-  my0 <= m_i(0) xor y_i(0); -- m0 + y0
-  -- stage 0 connections
-  my_cin_stage(0) <= m_i(0) and y_i(0); -- m0 + y0 carry
-  xin_stage(0) <= xi;
-  qin_stage(0) <= (xi and y_i(0)) xor a_0_stage(0);
-  cin_stage(0) <= my0_mux_result and a_0_stage(0);
-  red_cin_stage(0) <= '1'; -- add 1 for 2s complement
-  start_stage(0) <= start;
-  
-  my0_mux : cell_1b_mux
-  port map(
-    my     => my0,
-    m      => m_i(0),
-    y      => y_i(0),
-    x      => xin_stage(0),
-    q      => qin_stage(0),
-    result => my0_mux_result
+  first_stage : sys_first_cell_logic
+  port map (
+    m0       => m_i(0),
+    y0       => y_i(0),
+    my_cout  => my_cin_stage(0),
+    xi       => xi,
+    xout     => xin_stage(0),
+    qout     => qin_stage(0),
+    cout     => cin_stage(0),
+    a_0      => a_0_stage(0),
+    red_cout => red_cin_stage(0)
   );
   
+  start_stage(0) <= start;
   next_x <= done_stage(0);
   
   -- last cell logic
