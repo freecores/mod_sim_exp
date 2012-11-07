@@ -611,9 +611,9 @@ package mod_sim_exp_pkg is
   
         -- operand interface (multiplier side)
       op_sel    : in  std_logic_vector(1 downto 0);
-      xy_out    : out  std_logic_vector(1535 downto 0);
-      m         : out  std_logic_vector(1535 downto 0);
-      result_in : in std_logic_vector(1535 downto 0);
+      xy_out    : out  std_logic_vector((n-1) downto 0);
+      m         : out  std_logic_vector((n-1) downto 0);
+      result_in : in std_logic_vector((n-1) downto 0);
         -- control signals
       load_op        : in std_logic;
       load_m         : in std_logic;

@@ -70,9 +70,9 @@ entity operand_mem is
 
       -- operand interface (multiplier side)
     op_sel    : in  std_logic_vector(1 downto 0);
-    xy_out    : out  std_logic_vector(1535 downto 0);
-    m         : out  std_logic_vector(1535 downto 0);
-    result_in : in std_logic_vector(1535 downto 0);
+    xy_out    : out  std_logic_vector((n-1) downto 0);
+    m         : out  std_logic_vector((n-1) downto 0);
+    result_in : in std_logic_vector((n-1) downto 0);
       -- control signals
     load_op        : in std_logic;
     load_m         : in std_logic;
@@ -91,7 +91,9 @@ architecture Behavioral of operand_mem is
   signal operand_in_sel_i : std_logic_vector(1 downto 0);
   signal collision_i      : std_logic;
 
-  signal xy_op_i : std_logic_vector(1535 downto 0);
+  signal xy_out_i : std_logic_vector(1535 downto 0);
+  signal m_i : std_logic_vector(1535 downto 0);
+  signal result_in_i : std_logic_vector(1535 downto 0);
 
   signal m_addr_i  : std_logic_vector(5 downto 0);
   signal write_m_i : std_logic;
@@ -100,7 +102,9 @@ architecture Behavioral of operand_mem is
 begin
 
 	-- map outputs
-	xy_out <= xy_op_i;
+	xy_out <= xy_out_i((n-1) downto 0);
+	m <= m_i((n-1) downto 0);
+	result_in_i((n-1) downto 0) <= result_in;
 	collision <= collision_i;
 
 	-- map inputs
@@ -121,11 +125,11 @@ begin
     operand_in_sel  => operand_in_sel_i,
     result_out      => data_out,
     write_operand   => load_op,
-    operand_out     => xy_op_i,
+    operand_out     => xy_out_i,
     operand_out_sel => op_sel,
     result_dest_op  => result_dest_op,
     write_result    => load_result,
-    result_in       => result_in
+    result_in       => result_in_i
   );
 
   -- modulus storage
@@ -135,7 +139,7 @@ begin
     modulus_addr  => m_addr_i,
     write_modulus => write_m_i,
     modulus_in    => m_data_i,
-    modulus_out   => m
+    modulus_out   => m_i
   );
 	
 end Behavioral;

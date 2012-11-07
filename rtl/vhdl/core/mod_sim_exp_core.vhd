@@ -133,7 +133,10 @@ begin
   );
 
   -- Block ram memory for storing the operands and the modulus
-  the_memory : operand_mem 
+  the_memory : operand_mem
+  generic map(
+    n => n
+  )
   port map(
     data_in        => data_in,
     data_out       => data_out,
