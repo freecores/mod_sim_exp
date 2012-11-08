@@ -68,9 +68,9 @@ use mod_sim_exp.mod_sim_exp_pkg.all;
 -- 
 entity mont_mult_sys_pipeline is
   generic (
-    n          : integer := 1536; -- width of the operands
-    nr_stages  : integer := 96; -- total number of stages
-    stages_low : integer := 32  -- lower number of stages
+    n  : integer := 1536; -- width of the operands
+    t  : integer := 96;   -- total number of stages
+    tl : integer := 32    -- lower number of stages
   );
   port (
     -- clock input
@@ -90,8 +90,8 @@ entity mont_mult_sys_pipeline is
 end mont_mult_sys_pipeline;
 
 architecture Structural of mont_mult_sys_pipeline is
-  constant stage_width : integer := n/nr_stages;
-  constant bits_l      : integer := stage_width * stages_low;
+  constant stage_width : integer := n/t;
+  constant bits_l      : integer := stage_width * tl;
   constant bits_h      : integer := n - bits_l;
 
   signal my               : std_logic_vector(n downto 0);
@@ -117,8 +117,8 @@ begin
   x_selection : x_shift_reg
   generic map(
     n  => n,
-    t  => nr_stages,
-    tl => stages_low
+    t  => t,
+    tl => tl
   )
   port map(
     clk    => core_clk,
@@ -179,8 +179,8 @@ begin
   the_multiplier : systolic_pipeline
   generic map(
     n  => n, -- width of the operands (# bits)
-    t  => nr_stages,  -- number of stages (divider of n) >= 2
-    tl => stages_low
+    t  => t, -- number of stages (divider of n) >= 2
+    tl => tl
   )
   port map(
     core_clk => core_clk,

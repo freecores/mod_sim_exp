@@ -49,6 +49,24 @@ use ieee.std_logic_unsigned.all;
 
 
 package mod_sim_exp_pkg is
+  --------------------------------------------------------------------
+  ------------------------- CORE PARAMETERS --------------------------
+  --------------------------------------------------------------------
+  -- These 4 parameters affect core workings
+  constant nr_bits_total    : integer := 1536;
+  constant nr_stages_total  : integer := 96;
+  constant nr_stages_low    : integer := 32;
+  constant split_pipeline   : boolean := true;
+  
+  -- extra calculated parameters
+  constant nr_bits_low      : integer := (nr_bits_total/nr_stages_total)*nr_stages_low;
+  constant nr_bits_high     : integer := nr_bits_total-nr_bits_low;
+  constant nr_stages_high   : integer := nr_stages_total-nr_stages_low;
+  
+  
+  --------------------------------------------------------------------
+  ---------------------- COMPONENT DECLARATIONS ----------------------
+  --------------------------------------------------------------------
   
   --------------------------------------------------------------------
   -- d_flip_flop
@@ -460,9 +478,9 @@ package mod_sim_exp_pkg is
   -- 
   component mont_mult_sys_pipeline is
     generic (
-      n          : integer := 1536; -- width of the operands
-      nr_stages  : integer := 96; -- total number of stages
-      stages_low : integer := 32  -- lower number of stages
+      n  : integer := 1536; -- width of the operands
+      t  : integer := 96;   -- total number of stages
+      tl : integer := 32    -- lower number of stages
     );
     port (
       -- clock input
@@ -741,8 +759,10 @@ package mod_sim_exp_pkg is
   component sys_pipeline is
     generic(
       n  : integer := 1536; -- width of the operands (# bits)
-      t  : integer := 192;  -- total number of stages (divider of n) >= 2
-      tl : integer := 64    -- lower number of stages (best take t = sqrt(n))
+      t  : integer := 192;  -- total number of stages (minimum 2)
+      tl : integer := 64;   -- lower number of stages (minimum 1)
+      split : boolean := true -- if true the pipeline wil be split in 2 parts,
+                              -- if false there are no lower stages, only t counts
     );
     port(
       -- clock input
@@ -764,9 +784,11 @@ package mod_sim_exp_pkg is
   
   component mont_multiplier is
   generic (
-    n          : integer := 1536; -- width of the operands
-    nr_stages  : integer := 96; -- total number of stages
-    stages_low : integer := 32  -- lower number of stages
+    n     : integer := 1536;  -- width of the operands
+    t     : integer := 96;    -- total number of stages (minimum 2)
+    tl    : integer := 32;    -- lower number of stages (minimum 1)
+    split : boolean := true   -- if true the pipeline wil be split in 2 parts,
+                              -- if false there are no lower stages, only t counts
   );
   port (
     -- clock input

@@ -63,7 +63,6 @@ entity mod_sim_exp_core_tb is
 end mod_sim_exp_core_tb;
 
 architecture test of mod_sim_exp_core_tb is
-  constant nr_stages  : integer := 96;
   constant clk_period : time := 10 ns;
   signal clk          : std_logic := '0';
   signal reset        : std_logic := '1';
@@ -255,7 +254,7 @@ begin
         write(Lw, base_width);
         writeline(output, Lw);
         case (base_width) is
-          when 1536 => when 1024 => when 512 =>
+          when nr_bits_total => when nr_bits_high => when nr_bits_low =>
           when others => 
             write(Lw, string'("=> incompatible base width!!!")); writeline(output, Lw);
             assert false report "incompatible base width!!!" severity failure;
@@ -332,9 +331,9 @@ begin
         write(Lw, string'("----- Selecting pipeline: "));
         writeline(output, Lw);
         case (base_width) is
-          when 1536 =>  core_p_sel <= "11"; write(Lw, string'("  Full pipeline selected"));
-          when 1024 =>  core_p_sel <= "10"; write(Lw, string'("  Upper pipeline selected"));
-          when 512  =>  core_p_sel <= "01"; write(Lw, string'("  Lower pipeline selected"));
+          when nr_bits_total =>  core_p_sel <= "11"; write(Lw, string'("  Full pipeline selected"));
+          when nr_bits_high =>  core_p_sel <= "10"; write(Lw, string'("  Upper pipeline selected"));
+          when nr_bits_low  =>  core_p_sel <= "01"; write(Lw, string'("  Lower pipeline selected"));
           when others =>
             write(Lw, string'("  Invallid bitwidth for design"));
             assert false report "impossible basewidth!" severity failure;
@@ -427,7 +426,7 @@ begin
         write(Lw, string'(ToString(timer)));
         writeline(output, Lw);
         write(Lw, string'("  => expected time is "));
-        write(Lw, (nr_stages+(2*(base_width-1)))*clk_period);
+        write(Lw, (nr_stages_total+(2*(base_width-1)))*clk_period);
         writeline(output, Lw);
         if (gt0(base_width-1 downto 0) = data_read(base_width-1 downto 0)) then
           write(Lw, string'("  => gt0 is correct!")); writeline(output, Lw);
@@ -460,7 +459,7 @@ begin
         write(Lw, string'(ToString(timer)));
         writeline(output, Lw);
         write(Lw, string'("  => expected time is "));
-        write(Lw, (nr_stages+(2*(base_width-1)))*clk_period);
+        write(Lw, (nr_stages_total+(2*(base_width-1)))*clk_period);
         writeline(output, Lw);
         if (gt1(base_width-1 downto 0) = data_read(base_width-1 downto 0)) then
           write(Lw, string'("  => gt1 is correct!")); writeline(output, Lw);
@@ -493,7 +492,7 @@ begin
         write(Lw, string'(ToString(timer)));
         writeline(output, Lw);
         write(Lw, string'("  => expected time is "));
-        write(Lw, (nr_stages+(2*(base_width-1)))*clk_period);
+        write(Lw, (nr_stages_total+(2*(base_width-1)))*clk_period);
         writeline(output, Lw);
         if (R(base_width-1 downto 0) = data_read(base_width-1 downto 0)) then
           write(Lw, string'("  => (R)mod m is correct!")); writeline(output, Lw);
@@ -526,7 +525,7 @@ begin
         write(Lw, string'(ToString(timer)));
         writeline(output, Lw);
         write(Lw, string'("  => expected time is "));
-        write(Lw, (nr_stages+(2*(base_width-1)))*clk_period);
+        write(Lw, (nr_stages_total+(2*(base_width-1)))*clk_period);
         writeline(output, Lw);
         if (gt01(base_width-1 downto 0) = data_read(base_width-1 downto 0)) then
           write(Lw, string'("  => gt01 is correct!")); writeline(output, Lw);
@@ -572,7 +571,7 @@ begin
         write(Lw, string'(ToString(timer)));
         writeline(output, Lw);
         write(Lw, string'("  => expected time is "));
-        write(Lw, ((nr_stages+(2*(base_width-1)))*clk_period*7*exponent_width)/4);
+        write(Lw, ((nr_stages_total+(2*(base_width-1)))*clk_period*7*exponent_width)/4);
         writeline(output, Lw);
         write(Lw, string'("  => Done"));
         core_run_auto <= '0';
@@ -613,7 +612,7 @@ begin
         write(Lw, string'(ToString(timer)));
         writeline(output, Lw);
         write(Lw, string'("  => expected time is "));
-        write(Lw, (nr_stages+(2*(base_width-1)))*clk_period);
+        write(Lw, (nr_stages_total+(2*(base_width-1)))*clk_period);
         writeline(output, Lw);
         
       when 12 => -- check with result

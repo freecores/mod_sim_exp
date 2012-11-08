@@ -65,9 +65,11 @@ use mod_sim_exp.mod_sim_exp_pkg.all;
 -- 
 entity mont_multiplier is
   generic (
-    n          : integer := 1536; -- width of the operands
-    nr_stages  : integer := 96; -- total number of stages
-    stages_low : integer := 32  -- lower number of stages
+    n     : integer := 1536;  -- width of the operands
+    t     : integer := 96;    -- total number of stages (minimum 2)
+    tl    : integer := 32;    -- lower number of stages (minimum 1)
+    split : boolean := true   -- if true the pipeline wil be split in 2 parts,
+                              -- if false there are no lower stages, only t counts
   );
   port (
     -- clock input
@@ -87,15 +89,14 @@ entity mont_multiplier is
 end mont_multiplier;
 
 architecture Structural of mont_multiplier is
-  constant t  : integer := nr_stages;
-  constant tl : integer := stages_low;
-  constant s  : integer := n/nr_stages;   -- stage width (# bits)
+  constant s  : integer := n/t;   -- stage width (# bits)
   constant nl : integer := s*tl;  -- lower pipeline width (# bits)
   constant nh : integer :=  n - nl; -- higher pipeline width (# bits)
   
   signal reset_multiplier : std_logic;
   signal start_multiplier : std_logic;
   
+  signal p_sel_i : std_logic_vector(1 downto 0);
   signal t_sel  : integer range 0 to t;  -- width in stages of selected pipeline part
   signal n_sel  : integer range 0 to n;  -- width in bits of selected pipeline part
   
@@ -105,7 +106,7 @@ architecture Structural of mont_multiplier is
   signal start_first_stage : std_logic;
   
 begin
-
+  
   -- multiplier is reset every calculation or reset
   reset_multiplier <= reset or start;
 
@@ -123,8 +124,8 @@ begin
   x_selection : x_shift_reg
   generic map(
     n  => n,
-    t  => nr_stages,
-    tl => stages_low
+    t  => t,
+    tl => tl
   )
   port map(
     clk    => core_clk,
@@ -132,10 +133,23 @@ begin
     x_in   => xy,
     load_x => load_x,
     next_x => next_xi,
-    p_sel  => p_sel,
+    p_sel  => p_sel_i,
     xi     => xi
   );
   
+----------------------------------------
+-- SINGLE PIPELINE ASSIGNMENTS
+----------------------------------------
+single_pipeline : if split=false generate
+  p_sel_i <= "11";
+  t_sel <= t;
+  n_sel <= n-1;
+end generate;
+
+----------------------------------------
+-- SPLIT PIPELINE ASSIGNMENTS
+----------------------------------------
+split_pipeline : if split=true generate
   -- this module controls the pipeline operation
   --   width in stages for selected pipeline
   with p_sel select
@@ -149,11 +163,14 @@ begin
              nh-1 when "10",  -- higher pipeline part
              n-1 when others; -- full pipeline
   
+  p_sel_i <= p_sel;
+end generate;
+
   -- stepping control logic to keep track off the multiplication and when it is done
   stepping_control : stepping_logic
   generic map(
     n => n, -- max nr of steps required to complete a multiplication
-    t => nr_stages -- total nr of steps in the pipeline
+    t => t -- total nr of steps in the pipeline
   )
   port map(
     core_clk          => core_clk,
@@ -168,8 +185,9 @@ begin
   systolic_array : sys_pipeline
   generic map(
     n  => n,
-    t  => nr_stages,
-    tl => stages_low
+    t  => t,
+    tl => tl,
+    split => split
   )
   port map(
     core_clk => core_clk,
@@ -179,9 +197,8 @@ begin
     next_x  => next_xi,
     start   => start_first_stage,
     reset   => reset_multiplier,
-    p_sel   => p_sel,
+    p_sel   => p_sel_i,
     r       => r
   );
   
 end Structural;
-

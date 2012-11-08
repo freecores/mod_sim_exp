@@ -58,8 +58,10 @@ use mod_sim_exp.mod_sim_exp_pkg.all;
 entity sys_pipeline is
 	generic(
     n  : integer := 1536; -- width of the operands (# bits)
-    t  : integer := 192;  -- total number of stages (divider of n) >= 2
-    tl : integer := 64    -- lower number of stages (best take t = sqrt(n))
+    t  : integer := 192;  -- total number of stages (minimum 2)
+    tl : integer := 64;   -- lower number of stages (minimum 1)
+    split : boolean := true -- if true the pipeline wil be split in 2 parts,
+                            -- if false there are no lower stages, only t counts
   );
   port(
     -- clock input
@@ -82,42 +84,45 @@ end sys_pipeline;
 architecture Structural of sys_pipeline is
   constant s : integer := n/t;
   
-  
-  signal m_i           : std_logic_vector(n downto 0);
-  signal y_i           : std_logic_vector(n downto 0);
-  signal r_sel_l : std_logic;
-  signal r_sel_h : std_logic;
+  signal m_i     : std_logic_vector(n downto 0);
+  signal y_i     : std_logic_vector(n downto 0);
   
   -- systolic stages signals
-  signal my_cin_stage  : std_logic_vector((t-1) downto 0);
-  signal my_cout_stage : std_logic_vector((t-1) downto 0);
-  signal xin_stage     : std_logic_vector((t-1) downto 0);
-  signal qin_stage     : std_logic_vector((t-1) downto 0);
-  signal xout_stage    : std_logic_vector((t-1) downto 0);
-  signal qout_stage    : std_logic_vector((t-1) downto 0);
-  signal a_msb_stage   : std_logic_vector((t-1) downto 0);
-  signal a_0_stage     : std_logic_vector((t-1) downto 0);
-  signal cin_stage     : std_logic_vector((t-1) downto 0);
-  signal cout_stage    : std_logic_vector((t-1) downto 0);
-  signal red_cin_stage : std_logic_vector((t-1) downto 0);
+  signal my_cin_stage   : std_logic_vector((t-1) downto 0);
+  signal my_cout_stage  : std_logic_vector((t-1) downto 0);
+  signal xin_stage      : std_logic_vector((t-1) downto 0);
+  signal qin_stage      : std_logic_vector((t-1) downto 0);
+  signal xout_stage     : std_logic_vector((t-1) downto 0);
+  signal qout_stage     : std_logic_vector((t-1) downto 0);
+  signal a_msb_stage    : std_logic_vector((t-1) downto 0);
+  signal a_0_stage      : std_logic_vector((t-1) downto 0);
+  signal cin_stage      : std_logic_vector((t-1) downto 0);
+  signal cout_stage     : std_logic_vector((t-1) downto 0);
+  signal red_cin_stage  : std_logic_vector((t-1) downto 0);
   signal red_cout_stage : std_logic_vector((t-1) downto 0);
-  signal start_stage   : std_logic_vector((t-1) downto 0);
-  signal done_stage    : std_logic_vector((t-1) downto 0);
-  signal r_sel_stage   : std_logic_vector((t-1) downto 0);
-
-  -- mid end signals
-  signal a_0_midend : std_logic;
+  signal start_stage    : std_logic_vector((t-1) downto 0);
+  signal done_stage     : std_logic_vector((t-1) downto 0);
+  signal r_sel_stage    : std_logic_vector((t-1) downto 0);
+  
+  -- end logic signals
+  signal r_sel_end : std_logic;
+  
+  -- signals needed if pipeline is split
+  ---------------------------------------
+  signal r_sel_l : std_logic;
+  signal r_sel_h : std_logic;
+  -- mid end logic signals
+  signal a_0_midend   : std_logic;
   signal r_sel_midend : std_logic;
   
-  -- mid start signals
-  signal my_cout_midstart : std_logic;
-  signal xout_midstart : std_logic;
-  signal qout_midstart : std_logic;
-  signal cout_midstart : std_logic;
-  signal red_cout_midstart : std_logic;
+  -- mid start logic signals
+  signal my_cout_midstart   : std_logic;
+  signal xout_midstart      : std_logic;
+  signal qout_midstart      : std_logic;
+  signal cout_midstart      : std_logic;
+  signal red_cout_midstart  : std_logic;
   
-  -- end signals
-  signal r_sel_end : std_logic;
+
 begin
 
   m_i <= '0' & m;
@@ -168,11 +173,50 @@ begin
     red_cout => red_cin_stage(0)
   );
   
+    -- last cell logic
+  -------------------
+  last_cell : sys_last_cell_logic
+  port map (
+    core_clk => core_clk,
+    reset    => reset,
+    a_0      => a_msb_stage(t-1),
+    cin      => cout_stage(t-1),
+    red_cin  => red_cout_stage(t-1),
+    r_sel    => r_sel_end,
+    start    => done_stage(t-1)
+  );
+  
+------------------------------------
+-- SINGLE PART PIPELINE CONNECTIONS
+------------------------------------
+single_pipeline : if split=false generate
+  -- link stages to eachother
+  stage_connect : for i in 1 to (t-1) generate
+    my_cin_stage(i) <= my_cout_stage(i-1);
+    cin_stage(i) <= cout_stage(i-1);
+    xin_stage(i) <= xout_stage(i-1);
+    qin_stage(i) <= qout_stage(i-1);
+    red_cin_stage(i) <= red_cout_stage(i-1);
+    start_stage(i) <= done_stage(i-1);
+    a_msb_stage(i-1) <= a_0_stage(i);
+    r_sel_stage(i) <= r_sel_end;
+  end generate;
+    r_sel_stage(0) <= r_sel_end;
+  
+  start_stage(0) <= start;
+  next_x <= done_stage(0);
+end generate;
+
+----------------------------------------
+-- SPLIT PIPELINE CONNECTIONS AND LOGIC
+----------------------------------------
+split_pipeline : if split=true generate
   -- only start first stage if lower part is used
   with p_sel select
     start_stage(0) <= '0' when "10",
                       start when others;
   
+  -- select start or midstart stage for requesting new xi bit
   with p_sel select
     next_x <= done_stage(tl) when "10",
               done_stage(0) when others;
@@ -256,19 +300,6 @@ begin
     r_sel_stage(i) <= r_sel_h;
   end generate;
     r_sel_stage(tl) <= r_sel_h;
-    
-  -- last cell logic
-  -------------------
-  last_cell : sys_last_cell_logic
-  port map (
-    core_clk => core_clk,
-    reset    => reset,
-    a_0      => a_msb_stage(t-1),
-    cin      => cout_stage(t-1),
-    red_cin  => red_cout_stage(t-1),
-    r_sel    => r_sel_end,
-    start    => done_stage(t-1)
-  );
   
   with p_sel select
     r_sel_l <= r_sel_midend when "01",
@@ -278,5 +309,6 @@ begin
   with p_sel select
     r_sel_h <= '0' when "01",
                r_sel_end when others;           
-  
+end generate;
+
 end Structural;

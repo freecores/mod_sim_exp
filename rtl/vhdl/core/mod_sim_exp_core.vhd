@@ -87,14 +87,10 @@ end mod_sim_exp_core;
 
 
 architecture Structural of mod_sim_exp_core is
-  constant n : integer := 1536;
-  constant t : integer := 96;
-  constant tl : integer := 32;
-  
   -- data busses
-  signal xy   : std_logic_vector(n-1 downto 0);  -- x and y operand data bus RAM -> multiplier
-  signal m    : std_logic_vector(n-1 downto 0);  -- modulus data bus RAM -> multiplier
-  signal r    : std_logic_vector(n-1 downto 0);  -- result data bus RAM <- multiplier
+  signal xy   : std_logic_vector(nr_bits_total-1 downto 0);  -- x and y operand data bus RAM -> multiplier
+  signal m    : std_logic_vector(nr_bits_total-1 downto 0);  -- modulus data bus RAM -> multiplier
+  signal r    : std_logic_vector(nr_bits_total-1 downto 0);  -- result data bus RAM <- multiplier
   
   -- control signals
   signal op_sel           : std_logic_vector(1 downto 0); -- operand selection 
@@ -116,9 +112,10 @@ begin
   -- The actual multiplier
   the_multiplier : mont_multiplier
   generic map(
-    n          => n,
-    nr_stages  => t, --(divides n, bits_low & (n-bits_low))
-    stages_low => tl
+    n  => nr_bits_total,
+    t  => nr_stages_total,
+    tl => nr_stages_low,
+    split => split_pipeline
   )
   port map(
     core_clk => clk,
@@ -135,7 +132,7 @@ begin
   -- Block ram memory for storing the operands and the modulus
   the_memory : operand_mem
   generic map(
-    n => n
+    n => nr_bits_total
   )
   port map(
     data_in        => data_in,
