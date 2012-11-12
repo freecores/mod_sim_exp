@@ -1,3 +1,4 @@
+-- deprecated design file because of new pipeline structure         --
 ----------------------------------------------------------------------  
 ----  mont_mult_sys_pipeline                                       ---- 
 ----                                                              ---- 

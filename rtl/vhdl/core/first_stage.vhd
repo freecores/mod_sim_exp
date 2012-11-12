@@ -1,3 +1,4 @@
+-- deprecated design file because of new pipeline structure         --
 ----------------------------------------------------------------------  
 ----  first_stage                                                 ---- 
 ----                                                              ---- 
