@@ -67,7 +67,7 @@ architecture Behavioral of counter_sync is
 begin
 	
 	-- counter process with asynchronous active high reset
-	count_proc: process(core_clk, ce, reset)
+	count_proc: process(core_clk, reset)
 		variable steps_counter : integer range 0 to max_value-1;
 	begin
 		if reset = '1' then  -- reset counter

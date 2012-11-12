@@ -54,13 +54,15 @@ use mod_sim_exp.mod_sim_exp_pkg.all;
 
 
 entity operand_mem is
-  generic(n : integer := 1536
+  generic(
+    n : integer := 1536
   );
   port(
       -- data interface (plb side)
     data_in    : in  std_logic_vector(31 downto 0);
     data_out   : out  std_logic_vector(31 downto 0);
     rw_address : in  std_logic_vector(8 downto 0);
+    write_enable : in  std_logic;
       -- address structure:
       -- bit:  8   -> '1': modulus
       --              '0': operands
@@ -74,8 +76,6 @@ entity operand_mem is
     m         : out  std_logic_vector((n-1) downto 0);
     result_in : in std_logic_vector((n-1) downto 0);
       -- control signals
-    load_op        : in std_logic;
-    load_m         : in std_logic;
     load_result    : in std_logic;
     result_dest_op : in std_logic_vector(1 downto 0);
     collision      : out std_logic;
@@ -94,9 +94,10 @@ architecture Behavioral of operand_mem is
   signal xy_out_i : std_logic_vector(1535 downto 0);
   signal m_i : std_logic_vector(1535 downto 0);
   signal result_in_i : std_logic_vector(1535 downto 0);
+  signal load_op : std_logic;
 
   signal m_addr_i  : std_logic_vector(5 downto 0);
-  signal write_m_i : std_logic;
+  signal load_m    : std_logic;
   signal m_data_i  : std_logic_vector(31 downto 0);
 
 begin
@@ -113,7 +114,9 @@ begin
 	operand_in_sel_i <= rw_address(7 downto 6);
 	xy_data_i <= data_in;
 	m_data_i <= data_in;
-	write_m_i <= load_m;
+  
+	load_op <= write_enable when (rw_address(8) = '0') else '0';
+  load_m <= write_enable when (rw_address(8) = '1') else '0';
 
   -- xy operand storage
   xy_ram : operand_ram 
@@ -137,7 +140,7 @@ begin
   port map(
     clk           => clk,
     modulus_addr  => m_addr_i,
-    write_modulus => write_m_i,
+    write_modulus => load_m,
     modulus_in    => m_data_i,
     modulus_out   => m_i
   );

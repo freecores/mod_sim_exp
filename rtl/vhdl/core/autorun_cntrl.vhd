@@ -70,13 +70,11 @@ architecture Behavioral of autorun_cntrl is
   signal bit_counter_0_i  : std_logic;
   signal bit_counter_15_i : std_logic;
   signal next_bit_i       : std_logic := '0';
-  signal next_bit_del_i   : std_logic;
   
   signal start_cycle_i     : std_logic := '0';
   signal start_cycle_del_i : std_logic;
   
   signal done_i    : std_logic;
-  signal start_i   : std_logic;
   signal running_i : std_logic;
   
   signal start_multiplier_i     : std_logic;
@@ -168,7 +166,7 @@ begin
 	end process DEL_PROC;
 	
 	-- process for delaying signals with 1 clock cycle
-	CYCLE_CNTR_PROC: process(clk, start)
+	CYCLE_CNTR_PROC: process(clk, start, reset)
 	begin
 		if start = '1' or reset = '1' then
 			cycle_counter_i <= '0';

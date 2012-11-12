@@ -86,7 +86,6 @@ architecture Behavioral of operand_ram is
   signal doutb0 : std_logic_vector(31 downto 0);
   signal doutb1 : std_logic_vector(31 downto 0);
   signal doutb2 : std_logic_vector(31 downto 0);
-  signal doutb3 : std_logic_vector(31 downto 0);
 
 begin
 
@@ -121,8 +120,7 @@ begin
 	with operand_addr(5 downto 4) select
 		result_out <= doutb0 when "00",
 		              doutb1 when "01",
-				          doutb2 when "10",
-				          doutb3 when others;
+				          doutb2 when others;
 	
 	-- 3 instances of a dual port ram to store the parts of the operand
   op_0 : operand_dp

@@ -97,9 +97,7 @@ architecture Structural of mod_sim_exp_core is
   signal result_dest_op   : std_logic_vector(1 downto 0); -- result destination operand
   signal mult_ready       : std_logic;
   signal start_mult       : std_logic;
-  signal load_op          : std_logic;
   signal load_x         : std_logic;
-  signal load_m           : std_logic;
   signal load_result      : std_logic;
   
   -- fifo signals
@@ -138,20 +136,17 @@ begin
     data_in        => data_in,
     data_out       => data_out,
     rw_address     => rw_address,
+    write_enable   => write_enable,
     op_sel         => op_sel,
     xy_out         => xy,
     m              => m,
     result_in      => r,
-    load_op        => load_op,
-    load_m         => load_m,
     load_result    => load_result,
     result_dest_op => result_dest_op,
     collision      => collision,
     clk            => clk
   );
-
-	load_op <= write_enable when (rw_address(8) = '0') else '0';
-	load_m <= write_enable when (rw_address(8) = '1') else '0';
+  
 	result_dest_op <= dest_op_single when run_auto = '0' else "11"; -- in autorun mode we always store the result in operand3
 	
   -- A fifo for auto-run operand selection
@@ -181,7 +176,6 @@ begin
     op_buffer_empty  => fifo_empty,
     op_sel_buffer    => fifo_dout,
     read_buffer      => fifo_pop,
-    buffer_noread    => fifo_nopop,
     done             => ready,
     calc_time        => calc_time,
     op_sel           => op_sel,

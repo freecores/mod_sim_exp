@@ -66,7 +66,6 @@ entity mont_ctrl is
     op_buffer_empty : in std_logic;
     op_sel_buffer   : in std_logic_vector(31 downto 0);
     read_buffer     : out std_logic;
-    buffer_noread   : in std_logic;
     done            : out std_logic;
     calc_time       : out std_logic;
       -- multiplier side
@@ -130,8 +129,6 @@ begin
 			else
 				start_up_counter <= "100";
 			end if;
-		else
-			start_up_counter <= start_up_counter;
 		end if;
 	end process;
 	
@@ -162,8 +159,6 @@ begin
 			else
 				calc_time_i <= calc_time_i;
 			end if;
-		else
-			calc_time_i <= calc_time_i;
 		end if;
 	end process CALC_TIME_PROC;
 	calc_time <= calc_time_i;

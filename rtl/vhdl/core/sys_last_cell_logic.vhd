@@ -68,44 +68,27 @@ end sys_last_cell_logic;
 
 
 architecture Behavorial of sys_last_cell_logic is
-  signal cell_result_high       : std_logic_vector(1 downto 0);
-  signal cell_result_high_reg   : std_logic_vector(1 downto 0);
-  signal red_cout_end           : std_logic;
+  signal cin_reg   : std_logic;
 begin
-
-  -- half adder: cout_last_stage + cell_result_high_reg(1)
-  cell_result_high(0) <= cin xor cell_result_high_reg(1); --result
-  cell_result_high(1) <= cin and cell_result_high_reg(1); --cout
   
-  a_0 <= cell_result_high_reg(0);
+  a_0 <= cin_reg;
   
-  last_reg : register_n
-  generic map(
-    width => 2
-  )
+  last_reg : register_1b
   port map(
     core_clk => core_clk,
     ce       => start,
     reset    => reset,
-    din      => cell_result_high,
-    dout     => cell_result_high_reg
+    din      => cin,
+    dout     => cin_reg
   );
   
-  -- reduction, finishing last 2 bits
-  reduction_adder_a : cell_1b_adder
+  -- reduction, finishing last bit
+  reduction_adder : cell_1b_adder
   port map(
     a     => '1', -- for 2s complement of m
-    b     => cell_result_high_reg(0),
+    b     => cin_reg,
     cin   => red_cin,
-    cout  => red_cout_end
-  );
-
-  reduction_adder_b : cell_1b_adder
-  port map(
-    a     => '1', -- for 2s complement of m
-    b     => cell_result_high_reg(1),
-    cin   => red_cout_end,
     cout  => r_sel
   );
-  
+
 end Behavorial;

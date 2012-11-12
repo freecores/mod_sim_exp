@@ -573,6 +573,12 @@ package mod_sim_exp_pkg is
     );
   end component modulus_ram;
   
+  --------------------------------------------------------------------
+  -- mont_ctrl
+  --------------------------------------------------------------------
+  --    This module controls the montgommery mutliplier and controls traffic between
+  --    RAM and multiplier. Also contains the autorun logic for exponentiations.
+  -- 
   component mont_ctrl is
     port (
       clk   : in std_logic;
@@ -585,7 +591,6 @@ package mod_sim_exp_pkg is
       op_buffer_empty : in std_logic;
       op_sel_buffer   : in std_logic_vector(31 downto 0);
       read_buffer     : out std_logic;
-      buffer_noread   : in std_logic;
       done            : out std_logic;
       calc_time       : out std_logic;
         -- multiplier side
@@ -613,13 +618,15 @@ package mod_sim_exp_pkg is
   end component operand_dp;
   
   component operand_mem is
-    generic(n : integer := 1536
+    generic(
+      n : integer := 1536
     );
     port(
         -- data interface (plb side)
       data_in    : in  std_logic_vector(31 downto 0);
       data_out   : out  std_logic_vector(31 downto 0);
       rw_address : in  std_logic_vector(8 downto 0);
+      write_enable : in  std_logic;
         -- address structure:
         -- bit:  8   -> '1': modulus
         --              '0': operands
@@ -632,9 +639,7 @@ package mod_sim_exp_pkg is
       xy_out    : out  std_logic_vector((n-1) downto 0);
       m         : out  std_logic_vector((n-1) downto 0);
       result_in : in std_logic_vector((n-1) downto 0);
-        -- control signals
-      load_op        : in std_logic;
-      load_m         : in std_logic;
+      -- control signals
       load_result    : in std_logic;
       result_dest_op : in std_logic_vector(1 downto 0);
       collision      : out std_logic;
