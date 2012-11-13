@@ -60,6 +60,8 @@ use proc_common_v3_00_a.proc_common_pkg.all;
 -- DO NOT EDIT ABOVE THIS LINE --------------------
 
 --USER libraries added here
+library mod_sim_exp;
+use mod_sim_exp.mod_sim_exp_core_pkg.all;
 
 ------------------------------------------------------------------------------
 -- Entity section
@@ -144,31 +146,6 @@ end entity user_logic;
 architecture IMP of user_logic is
 
   --USER signal declarations added here, as needed for user logic
-  component multiplier_core
-    port(          clk : in  std_logic;
-	              reset : in  std_logic;
-			-- operand memory interface (plb shared memory)
-			 write_enable : in  std_logic;
-               data_in : in  std_logic_vector (31 downto 0);
-            rw_address : in  std_logic_vector (8 downto 0);
-              data_out : out std_logic_vector (31 downto 0);
-				 collision : out std_logic;
-			-- op_sel fifo interface
-			     fifo_din : in  std_logic_vector (31 downto 0);
-			    fifo_push : in  std_logic;
-			    fifo_full : out std_logic;
-			  fifo_nopush : out std_logic;
-			-- ctrl signals
-			        start : in  std_logic;
-			     run_auto : in  std_logic;
-			        ready : out std_logic;
-		    x_sel_single : in  std_logic_vector (1 downto 0);
-		    y_sel_single : in  std_logic_vector (1 downto 0);
-		  dest_op_single : in  std_logic_vector (1 downto 0);
-                 p_sel : in  std_logic_vector (1 downto 0);
-				 calc_time : out std_logic
-	);
-  end component;
 
   ------------------------------------------------------------------
   -- Signals for multiplier core slave model s/w accessible register
@@ -411,7 +388,7 @@ begin
   ------------------------------------------
   -- Multiplier core instance
   ------------------------------------------
-  the_multiplier: multiplier_core
+  the_multiplier: mod_sim_exp_core
   port map(        clk => Bus2IP_Clk, -- v
 	              reset => Bus2IP_Reset, -- v
 			-- operand memory interface (plb shared memory)
