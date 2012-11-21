@@ -61,7 +61,7 @@ use proc_common_v3_00_a.proc_common_pkg.all;
 
 --USER libraries added here
 library mod_sim_exp;
-use mod_sim_exp.mod_sim_exp_core_pkg.all;
+use mod_sim_exp.mod_sim_exp_pkg.all;
 
 ------------------------------------------------------------------------------
 -- Entity section
@@ -333,6 +333,7 @@ begin
     if ( Bus2IP_Clk'event and Bus2IP_Clk = '1' ) then
       if ( Bus2IP_Reset = '1' ) then
         mem_read_enable_dly1 <= '0';
+        
       else
         mem_read_enable_dly1 <= mem_read_enable;
       end if;
