@@ -9,7 +9,6 @@ HDL_DIR = ../rtl/vhdl/
 ##
 CORE_SRC =$(HDL_DIR)/core/mod_sim_exp_pkg.vhd \
 		 $(HDL_DIR)/core/adder_block.vhd \
-		 $(HDL_DIR)/core/adder_n.vhd \
 	 	 $(HDL_DIR)/core/autorun_cntrl.vhd \
 		 $(HDL_DIR)/core/cell_1b_adder.vhd \
 		 $(HDL_DIR)/core/cell_1b_mux.vhd \
@@ -17,11 +16,8 @@ CORE_SRC =$(HDL_DIR)/core/mod_sim_exp_pkg.vhd \
 		 $(HDL_DIR)/core/counter_sync.vhd \
 		 $(HDL_DIR)/core/d_flip_flop.vhd \
 		 $(HDL_DIR)/core/fifo_primitive.vhd \
-		 $(HDL_DIR)/core/first_stage.vhd \
-		 $(HDL_DIR)/core/last_stage.vhd \
 		 $(HDL_DIR)/core/modulus_ram.vhd \
 		 $(HDL_DIR)/core/mont_ctrl.vhd \
-		 $(HDL_DIR)/core/mont_mult_sys_pipeline.vhd \
 		 $(HDL_DIR)/core/mod_sim_exp_core.vhd \
 		 $(HDL_DIR)/core/operand_dp.vhd \
 		 $(HDL_DIR)/core/operand_mem.vhd \
@@ -30,9 +26,7 @@ CORE_SRC =$(HDL_DIR)/core/mod_sim_exp_pkg.vhd \
 		 $(HDL_DIR)/core/register_1b.vhd \
 		 $(HDL_DIR)/core/register_n.vhd \
 		 $(HDL_DIR)/core/standard_cell_block.vhd \
-		 $(HDL_DIR)/core/standard_stage.vhd \
 		 $(HDL_DIR)/core/stepping_logic.vhd \
-		 $(HDL_DIR)/core/systolic_pipeline.vhd \
 		 $(HDL_DIR)/core/x_shift_reg.vhd \
 		 $(HDL_DIR)/core/sys_stage.vhd \
 		 $(HDL_DIR)/core/sys_last_cell_logic.vhd \
