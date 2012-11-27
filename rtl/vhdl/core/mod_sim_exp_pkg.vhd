@@ -50,21 +50,6 @@ use ieee.std_logic_unsigned.all;
 
 package mod_sim_exp_pkg is
   --------------------------------------------------------------------
-  ------------------------- CORE PARAMETERS --------------------------
-  --------------------------------------------------------------------
-  -- These 4 parameters affect core workings
-  constant nr_bits_total    : integer := 1536;
-  constant nr_stages_total  : integer := 96;
-  constant nr_stages_low    : integer := 32;
-  constant split_pipeline   : boolean := true;
-  
-  -- extra calculated parameters
-  constant nr_bits_low      : integer := (nr_bits_total/nr_stages_total)*nr_stages_low;
-  constant nr_bits_high     : integer := nr_bits_total-nr_bits_low;
-  constant nr_stages_high   : integer := nr_stages_total-nr_stages_low;
-  
-  
-  --------------------------------------------------------------------
   ---------------------- COMPONENT DECLARATIONS ----------------------
   --------------------------------------------------------------------
   
@@ -306,6 +291,12 @@ package mod_sim_exp_pkg is
   --    and control logic
   -- 
   component mod_sim_exp_core is
+    generic(
+      C_NR_BITS_TOTAL : integer := 1536;
+      C_NR_STAGES_TOTAL : integer := 96;
+      C_NR_STAGES_LOW : integer := 32;
+      C_SPLIT_PIPELINE : boolean := true
+    );
     port(
       clk   : in  std_logic;
       reset : in  std_logic;

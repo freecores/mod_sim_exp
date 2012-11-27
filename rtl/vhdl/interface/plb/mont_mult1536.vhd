@@ -73,8 +73,8 @@ use interrupt_control_v2_01_a.interrupt_control;
 library plbv46_slave_single_v1_01_a;
 use plbv46_slave_single_v1_01_a.plbv46_slave_single;
 
-library mont_mult1536_v2_00_a;
-use mont_mult1536_v2_00_a.user_logic;
+library mod_sim_exp;
+use mod_sim_exp.user_logic;
 
 ------------------------------------------------------------------------------
 -- Entity section
@@ -157,6 +157,11 @@ entity mont_mult1536 is
   (
     -- ADD USER GENERICS BELOW THIS LINE ---------------
     --USER generics added here
+    -- Multiplier parameters
+    C_NR_BITS_TOTAL   : integer := 1536;
+    C_NR_STAGES_TOTAL : integer := 96;
+    C_NR_STAGES_LOW   : integer := 32;
+    C_SPLIT_PIPELINE  : boolean := true;
     -- ADD USER GENERICS ABOVE THIS LINE ---------------
 
     -- DO NOT EDIT BELOW THIS LINE ---------------------
@@ -563,11 +568,16 @@ begin
   ------------------------------------------
   -- instantiate User Logic
   ------------------------------------------
-  USER_LOGIC_I : entity mont_mult1536_v2_00_a.user_logic
+  USER_LOGIC_I : entity mod_sim_exp.user_logic
     generic map
     (
       -- MAP USER GENERICS BELOW THIS LINE ---------------
       --USER generics mapped here
+      -- Multiplier parameters
+      C_NR_BITS_TOTAL   => C_NR_BITS_TOTAL,
+      C_NR_STAGES_TOTAL => C_NR_STAGES_TOTAL,
+      C_NR_STAGES_LOW   => C_NR_STAGES_LOW,
+      C_SPLIT_PIPELINE  => C_SPLIT_PIPELINE,
       -- MAP USER GENERICS ABOVE THIS LINE ---------------
 
       C_SLV_AWIDTH                   => USER_SLV_AWIDTH,

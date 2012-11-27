@@ -95,6 +95,11 @@ entity user_logic is
   (
     -- ADD USER GENERICS BELOW THIS LINE ---------------
     --USER generics added here
+    -- Multiplier parameters
+    C_NR_BITS_TOTAL   : integer := 1536;
+    C_NR_STAGES_TOTAL : integer := 96;
+    C_NR_STAGES_LOW   : integer := 32;
+    C_SPLIT_PIPELINE  : boolean := true;
     -- ADD USER GENERICS ABOVE THIS LINE ---------------
 
     -- DO NOT EDIT BELOW THIS LINE ---------------------
@@ -390,29 +395,37 @@ begin
   -- Multiplier core instance
   ------------------------------------------
   the_multiplier: mod_sim_exp_core
-  port map(        clk => Bus2IP_Clk, -- v
-	              reset => Bus2IP_Reset, -- v
-			-- operand memory interface (plb shared memory)
-			 write_enable => core_write_enable, 
-               data_in => core_data_in,
-            rw_address => core_rw_address,
-              data_out => core_data_out,
-				 collision => core_mem_collision, -- v
-			-- op_sel fifo interface
-			     fifo_din => core_fifo_din,
-			    fifo_push => core_fifo_push,
-			    fifo_full => core_fifo_full, -- v
-			  fifo_nopush => core_fifo_nopush, -- v
-			-- ctrl signals
-			        start => core_start, -- v
-			     run_auto => core_run_auto, -- v
-			        ready => core_ready, -- v
-		    x_sel_single => core_x_sel_single, -- v
-		    y_sel_single => core_y_sel_single, -- v
-		  dest_op_single => core_dest_op_single, -- v
-                 p_sel => core_p_sel, -- v
-				 calc_time => calc_time -- v
+  generic map(
+    C_NR_BITS_TOTAL   => C_NR_BITS_TOTAL,
+    C_NR_STAGES_TOTAL => C_NR_STAGES_TOTAL,
+    C_NR_STAGES_LOW   => C_NR_STAGES_LOW,
+    C_SPLIT_PIPELINE  => C_SPLIT_PIPELINE
+  )
+  port map(
+    clk   => Bus2IP_Clk,
+    reset => Bus2IP_Reset,
+      -- operand memory interface (plb shared memory)
+    write_enable => core_write_enable,
+    data_in      => core_data_in,
+    rw_address   => core_rw_address,
+    data_out     => core_data_out,
+    collision    => core_mem_collision,
+      -- op_sel fifo interface
+    fifo_din    => core_fifo_din,
+    fifo_push   => core_fifo_push,
+    fifo_full   => core_fifo_full,
+    fifo_nopush => core_fifo_nopush,
+      -- ctrl signals
+    start          => core_start,
+    run_auto       => core_run_auto,
+    ready          => core_ready,
+    x_sel_single   => core_x_sel_single,
+    y_sel_single   => core_y_sel_single,
+    dest_op_single => core_dest_op_single,
+    p_sel          => core_p_sel,
+    calc_time      => calc_time
   );
+
 
   ------------------------------------------
   -- Drive IP to Bus signals

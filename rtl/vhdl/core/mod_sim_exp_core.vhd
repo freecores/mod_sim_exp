@@ -59,6 +59,12 @@ use mod_sim_exp.mod_sim_exp_pkg.all;
 -- contains an operand and modulus ram, multiplier, an exponent fifo
 -- and control logic
 entity mod_sim_exp_core is
+  generic(
+    C_NR_BITS_TOTAL   : integer := 1536;
+    C_NR_STAGES_TOTAL : integer := 96;
+    C_NR_STAGES_LOW   : integer := 32;
+    C_SPLIT_PIPELINE  : boolean := true
+  );
   port(
     clk   : in  std_logic;
     reset : in  std_logic;
@@ -88,9 +94,9 @@ end mod_sim_exp_core;
 
 architecture Structural of mod_sim_exp_core is
   -- data busses
-  signal xy   : std_logic_vector(nr_bits_total-1 downto 0);  -- x and y operand data bus RAM -> multiplier
-  signal m    : std_logic_vector(nr_bits_total-1 downto 0);  -- modulus data bus RAM -> multiplier
-  signal r    : std_logic_vector(nr_bits_total-1 downto 0);  -- result data bus RAM <- multiplier
+  signal xy   : std_logic_vector(C_NR_BITS_TOTAL-1 downto 0);  -- x and y operand data bus RAM -> multiplier
+  signal m    : std_logic_vector(C_NR_BITS_TOTAL-1 downto 0);  -- modulus data bus RAM -> multiplier
+  signal r    : std_logic_vector(C_NR_BITS_TOTAL-1 downto 0);  -- result data bus RAM <- multiplier
   
   -- control signals
   signal op_sel           : std_logic_vector(1 downto 0); -- operand selection 
@@ -110,10 +116,10 @@ begin
   -- The actual multiplier
   the_multiplier : mont_multiplier
   generic map(
-    n  => nr_bits_total,
-    t  => nr_stages_total,
-    tl => nr_stages_low,
-    split => split_pipeline
+    n  => C_NR_BITS_TOTAL,
+    t  => C_NR_STAGES_TOTAL,
+    tl => C_NR_STAGES_LOW,
+    split => C_SPLIT_PIPELINE
   )
   port map(
     core_clk => clk,
@@ -130,7 +136,7 @@ begin
   -- Block ram memory for storing the operands and the modulus
   the_memory : operand_mem
   generic map(
-    n => nr_bits_total
+    n => C_NR_BITS_TOTAL
   )
   port map(
     data_in        => data_in,

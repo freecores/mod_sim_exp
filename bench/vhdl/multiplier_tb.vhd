@@ -1,18 +1,18 @@
 ----------------------------------------------------------------------  
-----  mod_sim_exp_core_tb                                               ---- 
+----  multiplier_tb                                               ---- 
 ----                                                              ---- 
 ----  This file is part of the                                    ----
 ----    Modular Simultaneous Exponentiation Core project          ---- 
 ----    http://www.opencores.org/cores/mod_sim_exp/               ---- 
 ----                                                              ---- 
 ----  Description                                                 ---- 
-----    testbench for the modular simultaneous exponentiation     ----
-----    core. Performs some exponentiations to verify the design  ----
-----    Takes input parameters from sim_input.txt en writes       ----
-----    result and output to sim_output.txt                       ----
+----    testbench for the Montgomery multiplier                   ----
+----    Performs some multiplications to verify the design        ----
+----    Takes input parameters from sim_mult_input.txt and writes ----
+----    result and output to sim_mult_output.txt                  ----
 ----                                                              ----
 ----  Dependencies:                                               ----
-----    - multiplier_core                                         ----
+----    - mont_multiplier                                         ----
 ----                                                              ----
 ----  Authors:                                                    ----
 ----      - Geoffrey Ottoy, DraMCo research group                 ----
@@ -63,35 +63,44 @@ entity multiplier_tb is
 end multiplier_tb;
 
 architecture test of multiplier_tb is
-  constant nr_stages  : integer := 96;
-  constant clk_period : time := 10 ns;
+  constant CLK_PERIOD : time := 10 ns;
   signal clk          : std_logic := '0';
   signal reset        : std_logic := '1';
   file input          : text open read_mode is "src/sim_mult_input.txt";
   file output         : text open write_mode is "out/sim_mult_output.txt";
   
   ------------------------------------------------------------------
+  -- Core parameters
+  ------------------------------------------------------------------
+  constant NR_BITS_TOTAL   : integer := 1536;
+  constant NR_STAGES_TOTAL : integer := 96;
+  constant NR_STAGES_LOW   : integer := 32;
+  constant SPLIT_PIPELINE  : boolean := true;
+  
+  -- extra calculated constants
+  constant NR_BITS_LOW : integer := (NR_BITS_TOTAL/NR_STAGES_TOTAL)*NR_STAGES_LOW;
+  constant NR_BITS_HIGH : integer := NR_BITS_TOTAL-NR_BITS_LOW;
+  
+  -- the width of the input operand for the mulitplier test
+  constant TEST_NR_BITS : integer := NR_BITS_LOW;
+  
+  ------------------------------------------------------------------
   -- Signals for multiplier core memory space
   ------------------------------------------------------------------
-  constant n : integer := 1536;
-  constant t : integer := 96;
-  constant tl : integer := 0;
-  
   -- data busses
-  signal xy   : std_logic_vector(n-1 downto 0);  -- x and y operand data bus RAM -> multiplier
-  signal m    : std_logic_vector(n-1 downto 0);  -- modulus data bus RAM -> multiplier
-  signal r    : std_logic_vector(n-1 downto 0);  -- result data bus RAM <- multiplier
+  signal xy   : std_logic_vector(NR_BITS_TOTAL-1 downto 0);  -- x and y operand data bus RAM -> multiplier
+  signal m    : std_logic_vector(NR_BITS_TOTAL-1 downto 0);  -- modulus data bus RAM -> multiplier
+  signal r    : std_logic_vector(NR_BITS_TOTAL-1 downto 0);  -- result data bus RAM <- multiplier
   
   -- control signals
-  signal p_sel           : std_logic_vector(1 downto 0); -- operand selection 
-  signal result_dest_op   : std_logic_vector(1 downto 0); -- result destination operand
-  signal ready       : std_logic;
-  signal start       : std_logic;
-  signal load_op          : std_logic;
+  signal p_sel          : std_logic_vector(1 downto 0); -- operand selection
+  signal result_dest_op : std_logic_vector(1 downto 0); -- result destination operand
+  signal ready          : std_logic;
+  signal start          : std_logic;
+  signal load_op        : std_logic;
   signal load_x         : std_logic;
-  signal load_m           : std_logic;
-  signal load_result      : std_logic;
-
+  signal load_m         : std_logic;
+  signal load_result    : std_logic;
 begin
 
 ------------------------------------------
@@ -101,9 +110,9 @@ clk_process : process
 begin
   while (true) loop
     clk <= '0';
-    wait for clk_period/2;
+    wait for CLK_PERIOD/2;
     clk <= '1';
-    wait for clk_period/2;
+    wait for CLK_PERIOD/2;
   end loop;
 end process;
 
@@ -128,12 +137,10 @@ stim_proc : process
   -- variables to read file
   variable L : line;
   variable Lw : line;
-  variable x_op : std_logic_vector((n-1) downto 0) := (others=>'0');
-  variable y_op : std_logic_vector((n-1) downto 0) := (others=>'0');
-  variable m_op : std_logic_vector((n-1) downto 0) := (others=>'0');
-  variable result : std_logic_vector((n-1) downto 0) := (others=>'0');
-  variable one : std_logic_vector(2047 downto 0) := std_logic_vector(conv_unsigned(1, 2048));
-  variable data_read : std_logic_vector(2047 downto 0) := (others=>'0');
+  variable x_op : std_logic_vector((NR_BITS_TOTAL-1) downto 0) := (others=>'0');
+  variable y_op : std_logic_vector((NR_BITS_TOTAL-1) downto 0) := (others=>'0');
+  variable m_op : std_logic_vector((NR_BITS_TOTAL-1) downto 0) := (others=>'0');
+  variable result : std_logic_vector((NR_BITS_TOTAL-1) downto 0) := (others=>'0');
   variable good_value : boolean;
   variable param_count : integer := 0;
   
@@ -144,8 +151,18 @@ begin
   m <= (others=>'0');
   start <='0';
   reset <= '0';
-  p_sel <= "11";
   load_x <= '0';
+  write(Lw, string'("----- Selecting pipeline: "));
+  writeline(output, Lw);
+  case (TEST_NR_BITS) is
+    when NR_BITS_TOTAL =>  p_sel <= "11"; write(Lw, string'("  Full pipeline selected"));
+    when NR_BITS_HIGH =>  p_sel <= "10"; write(Lw, string'("  Upper pipeline selected"));
+    when NR_BITS_LOW  =>  p_sel <= "01"; write(Lw, string'("  Lower pipeline selected"));
+    when others =>
+      write(Lw, string'("  Invallid bitwidth for design"));
+      assert false report "impossible basewidth!" severity failure;
+  end case;
+  writeline(output, Lw);
   
   -- Generate active high reset signal
   reset <= '1';
@@ -158,8 +175,8 @@ begin
     next when L(1)='-'; -- skip comment lines
     -- read input values
     case param_count is
-      when 0 => -- base width
-        hread(L, x_op, good_value);
+      when 0 =>
+        hread(L, x_op(TEST_NR_BITS-1 downto 0), good_value);
         assert good_value report "Can not read x operand" severity failure;
         assert false report "Simulating multiplication" severity note;
         write(Lw, string'("----------------------------------------------"));
@@ -171,21 +188,21 @@ begin
         write(Lw, string'("----- Variables used:"));
         writeline(output, Lw);
         write(Lw, string'("x: "));
-        hwrite(Lw, x_op);
+        hwrite(Lw, x_op(TEST_NR_BITS-1 downto 0));
         writeline(output, Lw);
         
       when 1 =>
-        hread(L, y_op, good_value);
+        hread(L, y_op(TEST_NR_BITS-1 downto 0), good_value);
         assert good_value report "Can not read y operand" severity failure;
         write(Lw, string'("y: "));
-        hwrite(Lw, y_op);
+        hwrite(Lw, y_op(TEST_NR_BITS-1 downto 0));
         writeline(output, Lw);
      
       when 2 =>
-        hread(L, m_op, good_value);
+        hread(L, m_op(TEST_NR_BITS-1 downto 0), good_value);
         assert good_value report "Can not read m operand" severity failure;
         write(Lw, string'("m: "));
-        hwrite(Lw, m_op);
+        hwrite(Lw, m_op(TEST_NR_BITS-1 downto 0));
         writeline(output, Lw);
         
         -- load in x
@@ -209,17 +226,17 @@ begin
         wait until rising_edge(clk);
         writeline(output, Lw);
         write(Lw, string'("  Computed result: "));
-        hwrite(Lw, r);
+        hwrite(Lw, r(TEST_NR_BITS-1 downto 0));
         writeline(output, Lw);
         
       when 3 =>
-        hread(L, result, good_value);
+        hread(L, result(TEST_NR_BITS-1 downto 0), good_value);
         assert good_value report "Can not read result" severity failure;
         write(Lw, string'("  Read result:     "));
-        hwrite(Lw, result);
+        hwrite(Lw, result(TEST_NR_BITS-1 downto 0));
         writeline(output, Lw);
         
-        if (r = result) then
+        if (r(TEST_NR_BITS-1 downto 0) = result(TEST_NR_BITS-1 downto 0)) then
           write(Lw, string'("  => result is correct!")); writeline(output, Lw);
         else
           write(Lw, string'("  => Error: result is incorrect!!!")); writeline(output, Lw);
@@ -247,9 +264,10 @@ end process;
 ------------------------------------------
 the_multiplier : mont_multiplier
   generic map(
-    n          => n,
-    nr_stages  => t,
-    stages_low => tl
+    n     => NR_BITS_TOTAL,
+    t     => NR_STAGES_TOTAL,
+    tl    => NR_STAGES_LOW,
+    split => SPLIT_PIPELINE
   )
   port map(
     core_clk => clk,

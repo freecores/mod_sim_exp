@@ -63,11 +63,23 @@ entity mod_sim_exp_core_tb is
 end mod_sim_exp_core_tb;
 
 architecture test of mod_sim_exp_core_tb is
-  constant clk_period : time := 10 ns;
+  constant CLK_PERIOD : time := 10 ns;
   signal clk          : std_logic := '0';
   signal reset        : std_logic := '1';
   file input          : text open read_mode is "src/sim_input.txt";
   file output         : text open write_mode is "out/sim_output.txt";
+  
+  ------------------------------------------------------------------
+  -- Core parameters
+  ------------------------------------------------------------------
+  constant C_NR_BITS_TOTAL   : integer := 1536;
+  constant C_NR_STAGES_TOTAL : integer := 96;
+  constant C_NR_STAGES_LOW   : integer := 32;
+  constant C_SPLIT_PIPELINE  : boolean := true;
+  
+  -- extra calculated constants
+  constant NR_BITS_LOW : integer := (C_NR_BITS_TOTAL/C_NR_STAGES_TOTAL)*C_NR_STAGES_LOW;
+  constant NR_BITS_HIGH : integer := C_NR_BITS_TOTAL-NR_BITS_LOW;
   
   ------------------------------------------------------------------
   -- Signals for multiplier core memory space
@@ -105,9 +117,9 @@ clk_process : process
 begin
   while (true) loop
     clk <= '0';
-    wait for clk_period/2;
+    wait for CLK_PERIOD/2;
     clk <= '1';
-    wait for clk_period/2;
+    wait for CLK_PERIOD/2;
   end loop;
 end process;
 
@@ -254,7 +266,7 @@ begin
         write(Lw, base_width);
         writeline(output, Lw);
         case (base_width) is
-          when nr_bits_total => when nr_bits_high => when nr_bits_low =>
+          when C_NR_BITS_TOTAL => when NR_BITS_HIGH => when NR_BITS_LOW =>
           when others => 
             write(Lw, string'("=> incompatible base width!!!")); writeline(output, Lw);
             assert false report "incompatible base width!!!" severity failure;
@@ -331,9 +343,9 @@ begin
         write(Lw, string'("----- Selecting pipeline: "));
         writeline(output, Lw);
         case (base_width) is
-          when nr_bits_total =>  core_p_sel <= "11"; write(Lw, string'("  Full pipeline selected"));
-          when nr_bits_high =>  core_p_sel <= "10"; write(Lw, string'("  Upper pipeline selected"));
-          when nr_bits_low  =>  core_p_sel <= "01"; write(Lw, string'("  Lower pipeline selected"));
+          when C_NR_BITS_TOTAL =>  core_p_sel <= "11"; write(Lw, string'("  Full pipeline selected"));
+          when NR_BITS_HIGH =>  core_p_sel <= "10"; write(Lw, string'("  Upper pipeline selected"));
+          when NR_BITS_LOW  =>  core_p_sel <= "01"; write(Lw, string'("  Lower pipeline selected"));
           when others =>
             write(Lw, string'("  Invallid bitwidth for design"));
             assert false report "impossible basewidth!" severity failure;
@@ -426,7 +438,7 @@ begin
         write(Lw, string'(ToString(timer)));
         writeline(output, Lw);
         write(Lw, string'("  => expected time is "));
-        write(Lw, (nr_stages_total+(2*(base_width-1)))*clk_period);
+        write(Lw, (C_NR_STAGES_TOTAL+(2*(base_width-1)))*CLK_PERIOD);
         writeline(output, Lw);
         if (gt0(base_width-1 downto 0) = data_read(base_width-1 downto 0)) then
           write(Lw, string'("  => gt0 is correct!")); writeline(output, Lw);
@@ -459,7 +471,7 @@ begin
         write(Lw, string'(ToString(timer)));
         writeline(output, Lw);
         write(Lw, string'("  => expected time is "));
-        write(Lw, (nr_stages_total+(2*(base_width-1)))*clk_period);
+        write(Lw, (C_NR_STAGES_TOTAL+(2*(base_width-1)))*CLK_PERIOD);
         writeline(output, Lw);
         if (gt1(base_width-1 downto 0) = data_read(base_width-1 downto 0)) then
           write(Lw, string'("  => gt1 is correct!")); writeline(output, Lw);
@@ -492,7 +504,7 @@ begin
         write(Lw, string'(ToString(timer)));
         writeline(output, Lw);
         write(Lw, string'("  => expected time is "));
-        write(Lw, (nr_stages_total+(2*(base_width-1)))*clk_period);
+        write(Lw, (C_NR_STAGES_TOTAL+(2*(base_width-1)))*CLK_PERIOD);
         writeline(output, Lw);
         if (R(base_width-1 downto 0) = data_read(base_width-1 downto 0)) then
           write(Lw, string'("  => (R)mod m is correct!")); writeline(output, Lw);
@@ -525,7 +537,7 @@ begin
         write(Lw, string'(ToString(timer)));
         writeline(output, Lw);
         write(Lw, string'("  => expected time is "));
-        write(Lw, (nr_stages_total+(2*(base_width-1)))*clk_period);
+        write(Lw, (C_NR_STAGES_TOTAL+(2*(base_width-1)))*CLK_PERIOD);
         writeline(output, Lw);
         if (gt01(base_width-1 downto 0) = data_read(base_width-1 downto 0)) then
           write(Lw, string'("  => gt01 is correct!")); writeline(output, Lw);
@@ -571,7 +583,7 @@ begin
         write(Lw, string'(ToString(timer)));
         writeline(output, Lw);
         write(Lw, string'("  => expected time is "));
-        write(Lw, ((nr_stages_total+(2*(base_width-1)))*clk_period*7*exponent_width)/4);
+        write(Lw, ((C_NR_STAGES_TOTAL+(2*(base_width-1)))*CLK_PERIOD*7*exponent_width)/4);
         writeline(output, Lw);
         write(Lw, string'("  => Done"));
         core_run_auto <= '0';
@@ -612,7 +624,7 @@ begin
         write(Lw, string'(ToString(timer)));
         writeline(output, Lw);
         write(Lw, string'("  => expected time is "));
-        write(Lw, (nr_stages_total+(2*(base_width-1)))*clk_period);
+        write(Lw, (C_NR_STAGES_TOTAL+(2*(base_width-1)))*CLK_PERIOD);
         writeline(output, Lw);
         
       when 12 => -- check with result
@@ -655,6 +667,12 @@ end process;
 -- Multiplier core instance
 ------------------------------------------
 the_multiplier : mod_sim_exp.mod_sim_exp_pkg.mod_sim_exp_core
+generic map(
+  C_NR_BITS_TOTAL   => C_NR_BITS_TOTAL,
+  C_NR_STAGES_TOTAL => C_NR_STAGES_TOTAL,
+  C_NR_STAGES_LOW   => C_NR_STAGES_LOW,
+  C_SPLIT_PIPELINE  => C_SPLIT_PIPELINE
+)
 port map(
   clk   => clk,
   reset => reset,
