@@ -313,7 +313,7 @@ package mod_sim_exp_pkg is
       fifo_nopush : out std_logic;  -- high if error during push
         -- control signals
       start          : in  std_logic; -- start multiplication/exponentiation
-      run_auto       : in  std_logic; -- single multiplication if low, exponentiation if high
+      exp_m          : in  std_logic; -- single multiplication if low, exponentiation if high
       ready          : out std_logic; -- calculations done
       x_sel_single   : in  std_logic_vector (1 downto 0); -- single multiplication x operand selection
       y_sel_single   : in  std_logic_vector (1 downto 0); -- single multiplication y operand selection

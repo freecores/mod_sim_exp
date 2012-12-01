@@ -168,7 +168,7 @@ architecture IMP of user_logic is
   -- Signals for multiplier core interrupt
   ------------------------------------------------------------------
   signal core_interrupt                 : std_logic_vector(0 to 0);
-  signal core_fifo_full                : std_logic;
+  signal core_fifo_full                 : std_logic;
   signal core_fifo_nopush               : std_logic;
   signal core_ready                     : std_logic;
   signal core_mem_collision             : std_logic;
@@ -177,7 +177,7 @@ architecture IMP of user_logic is
   -- Signals for multiplier core control
   ------------------------------------------------------------------
   signal core_start                     : std_logic;
-  signal core_run_auto                  : std_logic;
+  signal core_exp_m                     : std_logic;
   signal core_p_sel                     : std_logic_vector(1 downto 0);
   signal core_dest_op_single            : std_logic_vector(1 downto 0);
   signal core_x_sel_single              : std_logic_vector(1 downto 0);
@@ -385,7 +385,7 @@ begin
   -- Map slv_reg0 bits to core control signals 
   ------------------------------------------
   core_start <= slv_reg0(8);
-  core_run_auto <= slv_reg0(9);
+  core_exp_m <= slv_reg0(9);
   core_p_sel <= slv_reg0(0 to 1);
   core_dest_op_single <= slv_reg0(2 to 3);
   core_x_sel_single <= slv_reg0(4 to 5);
@@ -417,7 +417,7 @@ begin
     fifo_nopush => core_fifo_nopush,
       -- ctrl signals
     start          => core_start,
-    run_auto       => core_run_auto,
+    exp_m          => core_exp_m,
     ready          => core_ready,
     x_sel_single   => core_x_sel_single,
     y_sel_single   => core_y_sel_single,

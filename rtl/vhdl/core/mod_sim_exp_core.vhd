@@ -81,7 +81,7 @@ entity mod_sim_exp_core is
     fifo_nopush : out std_logic;  -- high if error during push
       -- control signals
     start          : in  std_logic; -- start multiplication/exponentiation
-    run_auto       : in  std_logic; -- single multiplication if low, exponentiation if high
+    exp_m          : in  std_logic; -- single multiplication if low, exponentiation if high
     ready          : out std_logic; -- calculations done
     x_sel_single   : in  std_logic_vector (1 downto 0); -- single multiplication x operand selection
     y_sel_single   : in  std_logic_vector (1 downto 0); -- single multiplication y operand selection
@@ -153,7 +153,7 @@ begin
     clk            => clk
   );
   
-	result_dest_op <= dest_op_single when run_auto = '0' else "11"; -- in autorun mode we always store the result in operand3
+	result_dest_op <= dest_op_single when exp_m = '0' else "11"; -- in autorun mode we always store the result in operand3
 	
   -- A fifo for auto-run operand selection
   the_exponent_fifo : fifo_primitive 
@@ -178,7 +178,7 @@ begin
     start            => start,
     x_sel_single     => x_sel_single,
     y_sel_single     => y_sel_single,
-    run_auto         => run_auto,
+    run_auto         => exp_m,
     op_buffer_empty  => fifo_empty,
     op_sel_buffer    => fifo_dout,
     read_buffer      => fifo_pop,
