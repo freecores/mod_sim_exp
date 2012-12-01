@@ -94,7 +94,7 @@ architecture test of mod_sim_exp_core_tb is
   -- Signals for multiplier core control
   ------------------------------------------------------------------
   signal core_start          : std_logic;
-  signal core_run_auto       : std_logic;
+  signal core_exp_m          : std_logic;
   signal core_p_sel          : std_logic_vector(1 downto 0);
   signal core_dest_op_single : std_logic_vector(1 downto 0);
   signal core_x_sel_single   : std_logic_vector(1 downto 0);
@@ -233,7 +233,7 @@ begin
   core_fifo_push <= '0';
   -- control
   core_start <= '0';
-  core_run_auto <= '0';
+  core_exp_m <= '0';
   core_x_sel_single <= "00";
   core_y_sel_single <= "01";
   core_dest_op_single <= "01";
@@ -570,7 +570,7 @@ begin
         writeline(output, Lw);
         write(Lw, string'("----- Starting exponentiation: "));
         writeline(output, Lw);
-        core_run_auto <= '1';
+        core_exp_m <= '1';
         wait until rising_edge(clk);
         timer := NOW;
         core_start <= '1';
@@ -586,7 +586,7 @@ begin
         write(Lw, ((C_NR_STAGES_TOTAL+(2*(base_width-1)))*CLK_PERIOD*7*exponent_width)/4);
         writeline(output, Lw);
         write(Lw, string'("  => Done"));
-        core_run_auto <= '0';
+        core_exp_m <= '0';
         writeline(output, Lw);
         
         -- post-computations
@@ -689,7 +689,7 @@ port map(
   fifo_nopush => core_fifo_nopush,
 -- ctrl signals
   start          => core_start,
-  run_auto       => core_run_auto,
+  exp_m          => core_exp_m,
   ready          => core_ready,
   x_sel_single   => core_x_sel_single,
   y_sel_single   => core_y_sel_single,
