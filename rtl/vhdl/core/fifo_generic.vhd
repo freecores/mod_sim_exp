@@ -6,29 +6,16 @@
 ----    http://www.opencores.org/cores/mod_sim_exp/               ---- 
 ----                                                              ---- 
 ----  Description                                                 ---- 
-----    behavorial description of a FIFO,                  ----
--- Synthesizing Unit <fifo_generic>.
---    Related source file is "/dropbox/svn/mod_sim_exp/rtl/vhdl/core/fifo_generic.vhd".
---        aw = 8
---        depth = 128
---WARNING:Xst:3035 - Index value(s) does not match array range for signal <RAM>, simulation mismatch.
---    Found 129x32-bit dual-port RAM <Mram_RAM> for signal <RAM>.
---    Found 8-bit register for signal <rd_addr>.
---    Found 1-bit register for signal <push_i_d>.
---    Found 1-bit register for signal <nopop>.
---    Found 1-bit register for signal <nopush>.
---    Found 8-bit register for signal <wr_addr>.
---    Found 8-bit adder for signal <wr_addr[7]_GND_107_o_add_0_OUT> created at line 89.
---    Found 8-bit adder for signal <rd_addr[7]_GND_107_o_add_10_OUT> created at line 114.
---    Found 8-bit comparator equal for signal <wr_addr[7]_rd_addr[7]_equal_2_o> created at line 89
---    Found 8-bit comparator equal for signal <empty_i> created at line 93
---    Summary:
---  inferred   1 RAM(s).
---  inferred   2 Adder/Subtractor(s).
---  inferred  19 D-type flip-flop(s).
---  inferred   2 Comparator(s).
---Unit <fifo_generic> synthesized.
-----                                                              ---- 
+----    behavorial description of a FIFO, correctly inferred by   ----
+----    altera and xilinx.                                        ----
+----                                                              ----
+----  Resources needed (xilinx):                                  ----
+----    - RAM: (depth+1 * 32) bits                                ----
+----    - 2 adders/substractors                                   ----
+----    - 2 comparators                                           ----
+----    - 2 registers: aw bits  (for the address pointers)        ----
+----    - 3 registers:  1 bit (for the flags)                     ----
+----                                                              ----
 ----  Authors:                                                    ----
 ----      - Geoffrey Ottoy, DraMCo research group                 ----
 ----      - Jonas De Craene, JonasDC@opencores.org                ---- 
