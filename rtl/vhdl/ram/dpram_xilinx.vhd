@@ -6,18 +6,7 @@
 -- Description ${cursor}
 --------------------------------------------------------------------------------
 -- 
---        WIDTHA = 32
---        SIZEA = 32
---        ADDRWIDTHA = 5
---        WIDTHB = 512
---        SIZEB = 2
---        ADDRWIDTHB = 1
---    Found 32x32:2x512-bit dual-port RAM <Mram_ram> for signal <ram>.
---        Found 512-bit register for signal <doB>.
---    Found 512-bit register for signal <readB>.
---    Summary:
---  inferred   1 RAM(s).
---  inferred 1024 D-type flip-flop(s).
+--  correctly implemented as Block RAM, no other resources needed.
 -- 
 
 library ieee;
@@ -29,10 +18,10 @@ entity dpram_xilinx is
 
   generic (
     WIDTHA      : integer := 32;
-    SIZEA       : integer := 32;
-    ADDRWIDTHA  : integer := 5;
-    WIDTHB      : integer := 512;
-    SIZEB       : integer := 2;
+    SIZEA       : integer := 48;
+    ADDRWIDTHA  : integer := 6;
+    WIDTHB      : integer := 1536;
+    SIZEB       : integer := 1;
     ADDRWIDTHB  : integer := 1
     );
 
@@ -44,7 +33,6 @@ entity dpram_xilinx is
     addrA  : in  std_logic_vector(ADDRWIDTHA-1 downto 0);
     addrB  : in  std_logic_vector(ADDRWIDTHB-1 downto 0);
     diA    : in  std_logic_vector(WIDTHA-1 downto 0);
-    doA    : out std_logic_vector(WIDTHA-1 downto 0);
     doB    : out std_logic_vector(WIDTHB-1 downto 0)
     );
 
@@ -96,12 +84,13 @@ architecture behavioral of dpram_xilinx is
   --   - the RAM has two write ports,
   --   - the RAM has only one write port whose data width is maxWIDTH
   -- In all other cases, ram can be a signal.
-  shared variable ram : ramType := (others => (others => '0'));
+  signal ram : ramType := (others => (others => '0'));
   
-  signal readA : std_logic_vector(WIDTHA-1 downto 0):= (others => '0');
+  attribute ram_style : string;
+  attribute ram_style of ram:signal is "block";
+  
   signal readB : std_logic_vector(WIDTHB-1 downto 0):= (others => '0');
-  signal regA  : std_logic_vector(WIDTHA-1 downto 0):= (others => '0');
-  signal regB  : std_logic_vector(WIDTHB-1 downto 0):= (others => '0');
+  signal addrB_i : std_logic_vector(ADDRWIDTHB-1 downto 0):= (others => '0');
 
 begin
 
@@ -110,7 +99,7 @@ begin
   begin
     if rising_edge(clkA) then
       if weA = '1' then
-        ram(conv_integer(addrA)) := diA;
+        ram(conv_integer(addrA)) <= diA;
       end if;
     end if;
   end process;
@@ -120,16 +109,15 @@ begin
   begin
     if rising_edge(clkB) then
       if enB = '1' then        
-        for i in 0 to RATIO-1 loop
-          readB((i+1)*minWIDTH-1 downto i*minWIDTH)
-          <= ram(conv_integer(addrB & conv_std_logic_vector(i,log2(RATIO))));
-        end loop;
+        addrB_i <= addrB;
       end if;
-      regB <= readB;
+      doB <= readB;
     end if;
   end process;
-
-  doA <= regA;
-  doB <= regB;
+  
+  ramoutput : for i in 0 to RATIO-1 generate
+    readB((i+1)*minWIDTH-1 downto i*minWIDTH)
+    <= ram(conv_integer(addrB_i & conv_std_logic_vector(i,log2(RATIO))));
+  end generate;
   
 end behavioral;
