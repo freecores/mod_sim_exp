@@ -156,7 +156,10 @@ begin
 	result_dest_op <= dest_op_single when exp_m = '0' else "11"; -- in autorun mode we always store the result in operand3
 	
   -- A fifo for auto-run operand selection
-  the_exponent_fifo : fifo_primitive 
+  the_exponent_fifo : fifo_generic 
+  generic map(
+    depth => 8  -- depth needs to be at least C_NR_EXP_BITS_MAX/16
+  )
   port map(
     clk    => clk,
     din    => fifo_din,

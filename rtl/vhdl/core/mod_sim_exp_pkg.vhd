@@ -353,6 +353,30 @@ package mod_sim_exp_pkg is
     );
   end component fifo_primitive;
   
+  --------------------------------------------------------------------
+  -- fifo_generic
+  --------------------------------------------------------------------
+  --    a behavorial implementation of a fifo
+  -- 
+  component fifo_generic is
+    generic (
+      depth : integer := 32
+    );
+    port  (
+      clk    : in  std_logic; -- clock input
+      din    : in  std_logic_vector (31 downto 0); -- 32 bit input data for push
+      dout   : out  std_logic_vector (31 downto 0); -- 32 bit output data for pop
+      empty  : out  std_logic; -- empty flag, 1 when FIFO is empty
+      full   : out  std_logic; -- full flag, 1 when FIFO is full
+      push   : in  std_logic;  
+      pop    : in  std_logic;
+      reset  : in std_logic;
+      nopop  : out std_logic;
+      nopush : out std_logic
+    );
+  end component fifo_generic;
+  
+  
   component modulus_ram is
     port(
       clk           : in std_logic;
