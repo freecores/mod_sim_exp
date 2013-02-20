@@ -557,7 +557,7 @@ begin
           core_fifo_push <= '1';
           wait until rising_edge(clk);
           assert (core_fifo_full='0' and core_fifo_nopush='0') 
-            report "Fifo error, full or nopush" severity failure;
+            report "Fifo error, full or nopush" severity warning;
           core_fifo_push <= '0';
           wait until rising_edge(clk);
         end loop;
