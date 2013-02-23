@@ -53,15 +53,14 @@ use ieee.std_logic_unsigned.all;
 use ieee.std_logic_arith.all;
 
 library mod_sim_exp;
-use mod_sim_exp.all;
+use mod_sim_exp.std_functions.all;
 
 entity fifo_generic is
   generic (
-    aw : integer := 6;
     depth : integer := 32
   );
-	port  (
-		clk    : in  std_logic; -- clock input
+  port  (
+    clk    : in  std_logic; -- clock input
     din    : in  std_logic_vector (31 downto 0); -- 32 bit input data for push
     dout   : out  std_logic_vector (31 downto 0); -- 32 bit output data for pop
     empty  : out  std_logic; -- empty flag, 1 when FIFO is empty
@@ -71,10 +70,13 @@ entity fifo_generic is
     reset  : in std_logic;
     nopop  : out std_logic;
     nopush : out std_logic
-	);
+  );
 end fifo_generic;
 
 architecture arch of fifo_generic is
+  -- calculate the width for the address-pointers
+  constant aw : integer := log2(depth+1);
+
   -- read and write pointer
   signal rd_addr : std_logic_vector(aw-1 downto 0);
   signal wr_addr : std_logic_vector(aw-1 downto 0);
@@ -85,10 +87,6 @@ architecture arch of fifo_generic is
   signal push_i   : std_logic;
   signal push_i_d : std_logic;
   signal pop_i    : std_logic;
-
-  -- the memory
-  type ram_type is array (depth downto 0) of std_logic_vector (31 downto 0);
-  signal RAM       : ram_type;
 begin
   
   empty <= empty_i;
@@ -134,14 +132,19 @@ begin
   pop_i <= pop and not empty_i;
   
   -- Block RAM
-  process (clk)
-  begin
-    if (clk'event and clk = '1') then
-      if (push_i_d = '1') then
-        RAM(conv_integer(wr_addr)) <= din;
-      end if;
-      dout <= RAM(conv_integer(rd_addr));
-    end if;
-  end process;
+  ramblock: entity mod_sim_exp.dpram_generic
+    generic map(
+      depth => depth+1
+    )
+    port map(
+      clk   => clk,
+      -- write port
+      waddr => wr_addr,
+      we    => push_i_d,
+      din   => din,
+      -- read port
+      raddr => rd_addr,
+      dout  => dout
+    );
 
 end arch;

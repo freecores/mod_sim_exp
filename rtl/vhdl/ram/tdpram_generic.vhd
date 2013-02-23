@@ -1,13 +1,13 @@
 ----------------------------------------------------------------------  
-----  dpram_generic                                               ---- 
+----  tdpram_generic                                              ---- 
 ----                                                              ---- 
 ----  This file is part of the                                    ----
 ----    Modular Simultaneous Exponentiation Core project          ---- 
 ----    http://www.opencores.org/cores/mod_sim_exp/               ---- 
 ----                                                              ---- 
 ----  Description                                                 ---- 
-----    behovorial description of a dual port ram with one 32-bit ----
-----    write port and one 32-bit read port                       ----            
+----    behavorial description of a true dual port ram with 2     ----
+----    32-bit write/read ports                                   ----        
 ----                                                              ---- 
 ----  Dependencies: none                                          ----
 ----                                                              ----
@@ -79,9 +79,13 @@ architecture behavorial of tdpram_generic is
   -- xilinx constraint to use blockram resources
   attribute ram_style : string;
   attribute ram_style of RAM:variable is "block";
-  -- altera constraint
+  -- altera constraints:
+  -- for smal depths:
+  --  if the synthesis option : allow any size of RAM to be inferred, is on these lines 
+  --  may be left uncommented.
+  --  uncomment this attribute if that option is of and you know wich primitives should be used.
   --attribute ramstyle : string;
-  --attribute ramstyle of RAM:variable is "M9K, no_rw_check";
+  --attribute ramstyle of ram : signal is "M9K, no_rw_check";
 begin
   -- port A
   process (clkA)

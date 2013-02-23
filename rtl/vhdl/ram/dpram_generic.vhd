@@ -6,7 +6,7 @@
 ----    http://www.opencores.org/cores/mod_sim_exp/               ---- 
 ----                                                              ---- 
 ----  Description                                                 ---- 
-----    behovorial description of a dual port ram with one 32-bit ----
+----    behavorial description of a dual port ram with one 32-bit ----
 ----    write port and one 32-bit read port                       ----            
 ----                                                              ---- 
 ----  Dependencies: none                                          ----
@@ -75,9 +75,13 @@ architecture behavorial of dpram_generic is
   -- xilinx constraint to use blockram resources
   attribute ram_style : string;
   attribute ram_style of ram:signal is "block";
-  -- altera constraint
-  attribute ramstyle : string;
-  attribute ramstyle of ram : signal is "M9K, no_rw_check";
+  -- altera constraints:
+  -- for smal depths:
+  --  if the synthesis option : allow any size of RAM to be inferred, is on these lines 
+  --  may be left uncommented.
+  --  uncomment this attribute if that option is of and you know wich primitives should be used.
+  --attribute ramstyle : string;
+  --attribute ramstyle of ram : signal is "M9K, no_rw_check";
 begin
   process (clk)
   begin
