@@ -59,33 +59,33 @@ entity tdpram_generic is
     -- port A
     clkA  : in std_logic;
     addrA : in std_logic_vector(log2(depth)-1 downto 0);
-    weA    : in std_logic;
-    dinA   : in std_logic_vector(31 downto 0);
-    doutA  : out std_logic_vector(31 downto 0);
+    weA   : in std_logic;
+    dinA  : in std_logic_vector(31 downto 0);
+    doutA : out std_logic_vector(31 downto 0);
     -- port B
     clkB  : in std_logic;
     addrB : in std_logic_vector(log2(depth)-1 downto 0);
-    weB    : in std_logic;
-    dinB   : in std_logic_vector(31 downto 0);
-    doutB  : out std_logic_vector(31 downto 0)
+    weB   : in std_logic;
+    dinB  : in std_logic_vector(31 downto 0);
+    doutB : out std_logic_vector(31 downto 0)
   );
 end tdpram_generic;
 
 architecture behavorial of tdpram_generic is
   -- the memory
   type ram_type is array (depth-1 downto 0) of std_logic_vector (31 downto 0);
-  shared variable RAM: ram_type;
+  shared variable RAM: ram_type := (others => (others => '0'));
   
   -- xilinx constraint to use blockram resources
   attribute ram_style : string;
   attribute ram_style of RAM:variable is "block";
   -- altera constraints:
   -- for smal depths:
-  --  if the synthesis option : allow any size of RAM to be inferred, is on these lines 
-  --  may be left uncommented.
-  --  uncomment this attribute if that option is of and you know wich primitives should be used.
+  --  if the synthesis option "allow any size of RAM to be inferred" is on, these lines 
+  --  may be left commented.
+  --  uncomment this attribute if that option is off and you know wich primitives should be used.
   --attribute ramstyle : string;
-  --attribute ramstyle of ram : signal is "M9K, no_rw_check";
+  --attribute ramstyle of RAM : signal is "M9K, no_rw_check";
 begin
   -- port A
   process (clkA)

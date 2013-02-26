@@ -70,26 +70,26 @@ end dpram_generic;
 architecture behavorial of dpram_generic is
   -- the memory
   type ram_type is array (depth-1 downto 0) of std_logic_vector (31 downto 0);
-  signal ram : ram_type;
+  signal RAM : ram_type := (others => (others => '0'));
   
   -- xilinx constraint to use blockram resources
   attribute ram_style : string;
   attribute ram_style of ram:signal is "block";
   -- altera constraints:
   -- for smal depths:
-  --  if the synthesis option : allow any size of RAM to be inferred, is on these lines 
-  --  may be left uncommented.
-  --  uncomment this attribute if that option is of and you know wich primitives should be used.
+  --  if the synthesis option "allow any size of RAM to be inferred" is on, these lines 
+  --  may be left commented.
+  --  uncomment this attribute if that option is off and you know wich primitives should be used.
   --attribute ramstyle : string;
-  --attribute ramstyle of ram : signal is "M9K, no_rw_check";
+  --attribute ramstyle of RAM : signal is "M9K, no_rw_check";
 begin
   process (clk)
   begin
     if (clk'event and clk = '1') then
       if (we = '1') then
-        ram(conv_integer(waddr)) <= din;
+        RAM(conv_integer(waddr)) <= din;
       end if;
-      dout <= ram(conv_integer(raddr));
+      dout <= RAM(conv_integer(raddr));
     end if;
   end process;
 end behavorial;
