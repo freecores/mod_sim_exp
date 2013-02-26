@@ -47,11 +47,15 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 
+library mod_sim_exp;
+use mod_sim_exp.std_functions.all;
 
 package mod_sim_exp_pkg is
   --------------------------------------------------------------------
   ---------------------- COMPONENT DECLARATIONS ----------------------
   --------------------------------------------------------------------
+  
+  --------------------------- MULTIPLIER -----------------------------
   
   --------------------------------------------------------------------
   -- d_flip_flop
@@ -282,47 +286,7 @@ package mod_sim_exp_pkg is
       xi     : out std_logic  
     );
   end component x_shift_reg;
-
-  --------------------------------------------------------------------
-  -- mod_sim_exp_core
-  --------------------------------------------------------------------
-  --    toplevel of the modular simultaneous exponentiation core
-  --    contains an operand and modulus ram, multiplier, an exponent fifo
-  --    and control logic
-  -- 
-  component mod_sim_exp_core is
-    generic(
-      C_NR_BITS_TOTAL : integer := 1536;
-      C_NR_STAGES_TOTAL : integer := 96;
-      C_NR_STAGES_LOW : integer := 32;
-      C_SPLIT_PIPELINE : boolean := true
-    );
-    port(
-      clk   : in  std_logic;
-      reset : in  std_logic;
-        -- operand memory interface (plb shared memory)
-      write_enable : in  std_logic; -- write data to operand ram
-      data_in      : in  std_logic_vector (31 downto 0);  -- operand ram data in
-      rw_address   : in  std_logic_vector (8 downto 0);   -- operand ram address bus
-      data_out     : out std_logic_vector (31 downto 0);  -- operand ram data out
-      collision    : out std_logic; -- write collision
-        -- op_sel fifo interface
-      fifo_din    : in  std_logic_vector (31 downto 0); -- exponent fifo data in
-      fifo_push   : in  std_logic;  -- push data in exponent fifo
-      fifo_full   : out std_logic;  -- high if fifo is full
-      fifo_nopush : out std_logic;  -- high if error during push
-        -- control signals
-      start          : in  std_logic; -- start multiplication/exponentiation
-      exp_m          : in  std_logic; -- single multiplication if low, exponentiation if high
-      ready          : out std_logic; -- calculations done
-      x_sel_single   : in  std_logic_vector (1 downto 0); -- single multiplication x operand selection
-      y_sel_single   : in  std_logic_vector (1 downto 0); -- single multiplication y operand selection
-      dest_op_single : in  std_logic_vector (1 downto 0); -- result destination operand selection
-      p_sel          : in  std_logic_vector (1 downto 0); -- pipeline part selection
-      calc_time      : out std_logic
-    );
-  end component mod_sim_exp_core;
-
+  
   component autorun_cntrl is
     port (
       clk              : in  std_logic;
@@ -337,31 +301,6 @@ package mod_sim_exp_pkg is
       buffer_empty     : in  std_logic
     );
   end component autorun_cntrl;
-  
-  component fifo_primitive is
-    port (
-      clk    : in  std_logic;
-      din    : in  std_logic_vector (31 downto 0);
-      dout   : out  std_logic_vector (31 downto 0);
-      empty  : out  std_logic;
-      full   : out  std_logic;
-      push   : in  std_logic;
-      pop    : in  std_logic;
-      reset  : in std_logic;
-      nopop  : out std_logic;
-      nopush : out std_logic
-    );
-  end component fifo_primitive;
-  
-  component modulus_ram is
-    port(
-      clk           : in std_logic;
-      modulus_addr  : in std_logic_vector(5 downto 0);
-      write_modulus : in std_logic;
-      modulus_in    : in std_logic_vector(31 downto 0);
-      modulus_out   : out std_logic_vector(1535 downto 0)
-    );
-  end component modulus_ram;
   
   --------------------------------------------------------------------
   -- mont_ctrl
@@ -391,83 +330,6 @@ package mod_sim_exp_pkg is
       multiplier_ready : in std_logic
     );
   end component mont_ctrl;
-  
-  component operand_dp is
-    port (
-      clka  : in std_logic;
-      wea   : in std_logic_vector(0 downto 0);
-      addra : in std_logic_vector(5 downto 0);
-      dina  : in std_logic_vector(31 downto 0);
-      douta : out std_logic_vector(511 downto 0);
-      clkb  : in std_logic;
-      web   : in std_logic_vector(0 downto 0);
-      addrb : in std_logic_vector(5 downto 0);
-      dinb  : in std_logic_vector(511 downto 0);
-      doutb : out std_logic_vector(31 downto 0)
-    );
-  end component operand_dp;
-  
-  component operand_mem is
-    generic(
-      n : integer := 1536
-    );
-    port(
-        -- data interface (plb side)
-      data_in    : in  std_logic_vector(31 downto 0);
-      data_out   : out  std_logic_vector(31 downto 0);
-      rw_address : in  std_logic_vector(8 downto 0);
-      write_enable : in  std_logic;
-        -- address structure:
-        -- bit:  8   -> '1': modulus
-        --              '0': operands
-        -- bits: 7-6 -> operand_in_sel in case of bit 8 = '0'
-        --              don't care in case of modulus
-        -- bits: 5-0 -> modulus_addr / operand_addr resp.
-  
-        -- operand interface (multiplier side)
-      op_sel    : in  std_logic_vector(1 downto 0);
-      xy_out    : out  std_logic_vector((n-1) downto 0);
-      m         : out  std_logic_vector((n-1) downto 0);
-      result_in : in std_logic_vector((n-1) downto 0);
-      -- control signals
-      load_result    : in std_logic;
-      result_dest_op : in std_logic_vector(1 downto 0);
-      collision      : out std_logic;
-        -- system clock
-      clk : in  std_logic
-    );
-  end component operand_mem;
-  
-  component operand_ram is
-    port( -- write_operand_ack voorzien?
-      -- global ports
-      clk       : in std_logic;
-      collision : out std_logic;
-      -- bus side connections (32-bit serial)
-      operand_addr   : in std_logic_vector(5 downto 0);
-      operand_in     : in std_logic_vector(31 downto 0);
-      operand_in_sel : in std_logic_vector(1 downto 0);
-      result_out     : out std_logic_vector(31 downto 0);
-      write_operand  : in std_logic;
-      -- multiplier side connections (1536 bit parallel)
-      result_dest_op  : in std_logic_vector(1 downto 0);
-      operand_out     : out std_logic_vector(1535 downto 0);
-      operand_out_sel : in std_logic_vector(1 downto 0); -- controlled by bus side
-      write_result    : in std_logic;
-      result_in       : in std_logic_vector(1535 downto 0)
-    );
-  end component operand_ram;
-  
-  component operands_sp is
-    port (
-      clka  : in std_logic;
-      wea   : in std_logic_vector(0 downto 0);
-      addra : in std_logic_vector(4 downto 0);
-      dina  : in std_logic_vector(31 downto 0);
-      douta : out std_logic_vector(511 downto 0)
-    );
-  end component operands_sp;
-  
   
   component sys_stage is
     generic(
@@ -601,5 +463,345 @@ package mod_sim_exp_pkg is
     ready    : out std_logic
   );
   end component mont_multiplier;
+
+
+  ------------------------------ MEMORY ------------------------------
+  
+  --------------------------------------------------------------------
+  -- operand_dp
+  --------------------------------------------------------------------
+  --    true dual port RAM 512x4, uses xilinx primitives
+  --
+  component operand_dp is
+    port (
+      clka  : in std_logic;
+      wea   : in std_logic_vector(0 downto 0);
+      addra : in std_logic_vector(5 downto 0);
+      dina  : in std_logic_vector(31 downto 0);
+      douta : out std_logic_vector(511 downto 0);
+      clkb  : in std_logic;
+      web   : in std_logic_vector(0 downto 0);
+      addrb : in std_logic_vector(5 downto 0);
+      dinb  : in std_logic_vector(511 downto 0);
+      doutb : out std_logic_vector(31 downto 0)
+    );
+  end component operand_dp;
+  
+  --------------------------------------------------------------------
+  -- operand_sp
+  --------------------------------------------------------------------
+  --    dual port RAM 512x2, uses xilinx primitives
+  --
+  component operands_sp is
+    port (
+      clka  : in std_logic;
+      wea   : in std_logic_vector(0 downto 0);
+      addra : in std_logic_vector(4 downto 0);
+      dina  : in std_logic_vector(31 downto 0);
+      douta : out std_logic_vector(511 downto 0)
+    );
+  end component operands_sp;
+  
+  --------------------------------------------------------------------
+  -- dpram_generic
+  --------------------------------------------------------------------
+  --    behavorial description of a dual port ram with one 32-bit
+  --    write port and one 32-bit read port
+  -- 
+  component dpram_generic is
+    generic (
+      depth : integer := 2
+    );
+    port  (
+      clk : in std_logic;
+      -- write port
+      waddr : in std_logic_vector(log2(depth)-1 downto 0);
+      we    : in std_logic;
+      din   : in std_logic_vector(31 downto 0);
+      -- read port
+      raddr : in std_logic_vector(log2(depth)-1 downto 0);
+      dout  : out std_logic_vector(31 downto 0)
+    );
+  end component dpram_generic;
+  
+  --------------------------------------------------------------------
+  -- tdpram_generic
+  --------------------------------------------------------------------
+  --    behavorial description of a true dual port ram with 2
+  --    32-bit write/read ports
+  -- 
+  component tdpram_generic is
+    generic (
+      depth : integer := 9
+    );
+    port (
+      -- port A
+      clkA  : in std_logic;
+      addrA : in std_logic_vector(log2(depth)-1 downto 0);
+      weA   : in std_logic;
+      dinA  : in std_logic_vector(31 downto 0);
+      doutA : out std_logic_vector(31 downto 0);
+      -- port B
+      clkB  : in std_logic;
+      addrB : in std_logic_vector(log2(depth)-1 downto 0);
+      weB   : in std_logic;
+      dinB  : in std_logic_vector(31 downto 0);
+      doutB : out std_logic_vector(31 downto 0)
+    );
+  end component tdpram_generic;
+  
+   --------------------------------------------------------------------
+  -- fifo_primitive
+  --------------------------------------------------------------------
+  --    a xilinx fifo primitive wrapper
+  -- 
+  component fifo_primitive is
+    port (
+      clk    : in  std_logic;
+      din    : in  std_logic_vector (31 downto 0);
+      dout   : out  std_logic_vector (31 downto 0);
+      empty  : out  std_logic;
+      full   : out  std_logic;
+      push   : in  std_logic;
+      pop    : in  std_logic;
+      reset  : in std_logic;
+      nopop  : out std_logic;
+      nopush : out std_logic
+    );
+  end component fifo_primitive;
+  
+  --------------------------------------------------------------------
+  -- fifo_generic
+  --------------------------------------------------------------------
+  --    a behavorial implementation of a fifo that is designed to 
+  --    infer blockram
+  -- 
+  component fifo_generic is
+    generic (
+      depth : integer := 32
+    );
+    port  (
+      clk    : in  std_logic; -- clock input
+      din    : in  std_logic_vector (31 downto 0); -- 32 bit input data for push
+      dout   : out  std_logic_vector (31 downto 0); -- 32 bit output data for pop
+      empty  : out  std_logic; -- empty flag, 1 when FIFO is empty
+      full   : out  std_logic; -- full flag, 1 when FIFO is full
+      push   : in  std_logic;  
+      pop    : in  std_logic;
+      reset  : in std_logic;
+      nopop  : out std_logic;
+      nopush : out std_logic
+    );
+  end component fifo_generic;
+  
+  --------------------------------------------------------------------
+  -- modulus_ram
+  --------------------------------------------------------------------
+  --    RAM for the modulus, fixed width of 1536-bit, uses xilinx primitives
+  --
+  component modulus_ram is
+    port(
+      clk           : in std_logic;
+      modulus_addr  : in std_logic_vector(5 downto 0);
+      write_modulus : in std_logic;
+      modulus_in    : in std_logic_vector(31 downto 0);
+      modulus_out   : out std_logic_vector(1535 downto 0)
+    );
+  end component modulus_ram;
+  
+  --------------------------------------------------------------------
+  -- modulus_ram_gen
+  --------------------------------------------------------------------
+  --    behavorial description of a RAM to hold the modulus, with 
+  --    adjustable width and depth(nr of moduluses)
+  --
+  component modulus_ram_gen is
+    generic(
+      width : integer := 1536;  -- must be a multiple of 32
+      depth : integer := 2      -- nr of moduluses
+    );
+    port(
+      clk            : in std_logic;
+        -- bus side
+      write_modulus  : in std_logic; -- write enable
+      modulus_in_sel : in std_logic_vector(log2(depth)-1 downto 0); -- modulus operand to write to
+      modulus_addr   : in std_logic_vector(log2((width)/32)-1 downto 0); -- modulus word(32-bit) address
+      modulus_in     : in std_logic_vector(31 downto 0); -- modulus word data in
+      modulus_sel    : in std_logic_vector(log2(depth)-1 downto 0); -- selects the modulus to use for multiplications
+        -- multiplier side
+      modulus_out    : out std_logic_vector(width-1 downto 0)
+    );
+  end component modulus_ram_gen;
+  
+  --------------------------------------------------------------------
+  -- operand_ram_gen
+  --------------------------------------------------------------------
+  --    behavorial description of a RAM to hold the operands, with 
+  --    adjustable width and depth(nr of operands)
+  --
+  component operand_ram_gen is
+    generic(
+      width : integer := 1536; -- width of the operands
+      depth : integer := 4     -- nr of operands
+    );
+    port(
+        -- global ports
+      clk       : in std_logic;
+      collision : out std_logic; -- 1 if simultaneous write on RAM
+        -- bus side connections (32-bit serial)
+      write_operand  : in std_logic; -- write_enable
+      operand_in_sel : in std_logic_vector(log2(depth)-1 downto 0); -- operand to write to
+      operand_addr   : in std_logic_vector(log2(width/32)-1 downto 0); -- address of operand word to write
+      operand_in     : in std_logic_vector(31 downto 0);  -- operand word(32-bit) to write
+      result_out     : out std_logic_vector(31 downto 0); -- operand out, reading is always result operand
+      operand_out_sel : in std_logic_vector(log2(depth)-1 downto 0); -- operand to give to multiplier
+        -- multiplier side connections (width-bit parallel)
+      result_dest_op  : in std_logic_vector(log2(depth)-1 downto 0); -- operand select for result
+      operand_out     : out std_logic_vector(width-1 downto 0); -- operand out to multiplier
+      write_result    : in std_logic; -- write enable for multiplier side
+      result_in       : in std_logic_vector(width-1 downto 0) -- result to write from multiplier
+    );
+  end component operand_ram_gen;
+  
+  --------------------------------------------------------------------
+  -- operand_ram
+  --------------------------------------------------------------------
+  --    RAM for the operands, fixed width of 1536-bit and depth of 4
+  --    uses xilinx primitives
+  --
+  component operand_ram is
+    port( -- write_operand_ack voorzien?
+      -- global ports
+      clk       : in std_logic;
+      collision : out std_logic;
+      -- bus side connections (32-bit serial)
+      operand_addr   : in std_logic_vector(5 downto 0);
+      operand_in     : in std_logic_vector(31 downto 0);
+      operand_in_sel : in std_logic_vector(1 downto 0);
+      result_out     : out std_logic_vector(31 downto 0);
+      write_operand  : in std_logic;
+      -- multiplier side connections (1536 bit parallel)
+      result_dest_op  : in std_logic_vector(1 downto 0);
+      operand_out     : out std_logic_vector(1535 downto 0);
+      operand_out_sel : in std_logic_vector(1 downto 0); -- controlled by bus side
+      write_result    : in std_logic;
+      result_in       : in std_logic_vector(1535 downto 0)
+    );
+  end component operand_ram;
+  
+  
+  component operand_mem is
+    generic(
+      n : integer := 1536
+    );
+    port(
+        -- data interface (plb side)
+      data_in    : in  std_logic_vector(31 downto 0);
+      data_out   : out  std_logic_vector(31 downto 0);
+      rw_address : in  std_logic_vector(8 downto 0);
+      write_enable : in  std_logic;
+        -- address structure:
+        -- bit:  8   -> '1': modulus
+        --              '0': operands
+        -- bits: 7-6 -> operand_in_sel in case of bit 8 = '0'
+        --              don't care in case of modulus
+        -- bits: 5-0 -> modulus_addr / operand_addr resp.
+  
+        -- operand interface (multiplier side)
+      op_sel    : in  std_logic_vector(1 downto 0);
+      xy_out    : out  std_logic_vector((n-1) downto 0);
+      m         : out  std_logic_vector((n-1) downto 0);
+      result_in : in std_logic_vector((n-1) downto 0);
+      -- control signals
+      load_result    : in std_logic;
+      result_dest_op : in std_logic_vector(1 downto 0);
+      collision      : out std_logic;
+        -- system clock
+      clk : in  std_logic
+    );
+  end component operand_mem;
+  
+  --------------------------------------------------------------------
+  -- operand_mem_gen
+  --------------------------------------------------------------------
+  --    generic description of the cores memory, places the modulus
+  --    and operands in one addres and data bus
+  --
+  --    address structure:
+  --    bit: highest   ->  '1': modulus
+  --                       '0': operands
+  --    bits: (highest-1)-log2(width/32) -> operand_in_sel in case of highest bit = '0'
+  --                                         modulus_in_sel in case of highest bit = '1'
+  --    bits: (log2(width/32)-1)-0 -> modulus_addr / operand_addr resp.
+  -- 
+  component operand_mem_gen is
+    generic(
+      width : integer := 1536; -- width of the operands
+      nr_op : integer := 4; -- nr of operand storages, has to be greater than nr_m
+      nr_m  : integer := 2  -- nr of modulus storages
+    );
+    port(
+      -- system clock
+      clk : in std_logic;
+      -- data interface (plb side)
+      data_in      : in std_logic_vector(31 downto 0);
+      data_out     : out std_logic_vector(31 downto 0);
+      rw_address   : in std_logic_vector(log2(nr_op)+log2(width/32) downto 0);
+      write_enable : in std_logic;
+      -- operand interface (multiplier side)
+      op_sel    : in std_logic_vector(log2(nr_op)-1 downto 0);
+      xy_out    : out std_logic_vector((width-1) downto 0);
+      m         : out std_logic_vector((width-1) downto 0);
+      result_in : in std_logic_vector((width-1) downto 0);
+      -- control signals
+      load_result    : in std_logic;
+      result_dest_op : in std_logic_vector(log2(nr_op)-1 downto 0);
+      collision      : out std_logic;
+      modulus_sel    : in std_logic_vector(log2(nr_m)-1 downto 0)
+    );
+  end component operand_mem_gen;
+  
+  
+  ---------------------------- TOP LEVEL -----------------------------
+  
+  --------------------------------------------------------------------
+  -- mod_sim_exp_core
+  --------------------------------------------------------------------
+  --    toplevel of the modular simultaneous exponentiation core
+  --    contains an operand and modulus ram, multiplier, an exponent fifo
+  --    and control logic
+  -- 
+  component mod_sim_exp_core is
+    generic(
+      C_NR_BITS_TOTAL : integer := 1536;
+      C_NR_STAGES_TOTAL : integer := 96;
+      C_NR_STAGES_LOW : integer := 32;
+      C_SPLIT_PIPELINE : boolean := true
+    );
+    port(
+      clk   : in  std_logic;
+      reset : in  std_logic;
+        -- operand memory interface (plb shared memory)
+      write_enable : in  std_logic; -- write data to operand ram
+      data_in      : in  std_logic_vector (31 downto 0);  -- operand ram data in
+      rw_address   : in  std_logic_vector (8 downto 0);   -- operand ram address bus
+      data_out     : out std_logic_vector (31 downto 0);  -- operand ram data out
+      collision    : out std_logic; -- write collision
+        -- op_sel fifo interface
+      fifo_din    : in  std_logic_vector (31 downto 0); -- exponent fifo data in
+      fifo_push   : in  std_logic;  -- push data in exponent fifo
+      fifo_full   : out std_logic;  -- high if fifo is full
+      fifo_nopush : out std_logic;  -- high if error during push
+        -- control signals
+      start          : in  std_logic; -- start multiplication/exponentiation
+      exp_m          : in  std_logic; -- single multiplication if low, exponentiation if high
+      ready          : out std_logic; -- calculations done
+      x_sel_single   : in  std_logic_vector (1 downto 0); -- single multiplication x operand selection
+      y_sel_single   : in  std_logic_vector (1 downto 0); -- single multiplication y operand selection
+      dest_op_single : in  std_logic_vector (1 downto 0); -- result destination operand selection
+      p_sel          : in  std_logic_vector (1 downto 0); -- pipeline part selection
+      calc_time      : out std_logic
+    );
+  end component mod_sim_exp_core;
   
 end package mod_sim_exp_pkg;

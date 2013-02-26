@@ -54,6 +54,7 @@ use ieee.std_logic_unsigned.all;
 
 library mod_sim_exp;
 use mod_sim_exp.mod_sim_exp_pkg.all;
+use mod_sim_exp.std_functions.all;
 
 -- toplevel of the modular simultaneous exponentiation core
 -- contains an operand and modulus ram, multiplier, an exponent fifo
@@ -63,7 +64,10 @@ entity mod_sim_exp_core is
     C_NR_BITS_TOTAL   : integer := 1536;
     C_NR_STAGES_TOTAL : integer := 96;
     C_NR_STAGES_LOW   : integer := 32;
-    C_SPLIT_PIPELINE  : boolean := true
+    C_SPLIT_PIPELINE  : boolean := true;
+    C_NR_OP           : integer := 4;
+    C_NR_M            : integer := 2;
+    C_FIFO_DEPTH      : integer := 32
   );
   port(
     clk   : in  std_logic;
@@ -71,7 +75,7 @@ entity mod_sim_exp_core is
       -- operand memory interface (plb shared memory)
     write_enable : in  std_logic; -- write data to operand ram
     data_in      : in  std_logic_vector (31 downto 0);  -- operand ram data in
-    rw_address   : in  std_logic_vector (8 downto 0);   -- operand ram address bus
+    rw_address   : in  std_logic_vector (log2(C_NR_OP)+log2(C_NR_BITS_TOTAL/32) downto 0);   -- operand ram address bus
     data_out     : out std_logic_vector (31 downto 0);  -- operand ram data out
     collision    : out std_logic; -- write collision
       -- op_sel fifo interface
@@ -83,11 +87,12 @@ entity mod_sim_exp_core is
     start          : in  std_logic; -- start multiplication/exponentiation
     exp_m          : in  std_logic; -- single multiplication if low, exponentiation if high
     ready          : out std_logic; -- calculations done
-    x_sel_single   : in  std_logic_vector (1 downto 0); -- single multiplication x operand selection
-    y_sel_single   : in  std_logic_vector (1 downto 0); -- single multiplication y operand selection
-    dest_op_single : in  std_logic_vector (1 downto 0); -- result destination operand selection
+    x_sel_single   : in  std_logic_vector (log2(C_NR_OP)-1 downto 0); -- single multiplication x operand selection
+    y_sel_single   : in  std_logic_vector (log2(C_NR_OP)-1 downto 0); -- single multiplication y operand selection
+    dest_op_single : in  std_logic_vector (log2(C_NR_OP)-1 downto 0); -- result destination operand selection
     p_sel          : in  std_logic_vector (1 downto 0); -- pipeline part selection
-    calc_time      : out std_logic
+    calc_time      : out std_logic;
+    modulus_sel	   : in std_logic_vector(log2(C_NR_M)-1 downto 0)
   );
 end mod_sim_exp_core;
 
@@ -134,9 +139,11 @@ begin
   );
 
   -- Block ram memory for storing the operands and the modulus
-  the_memory : operand_mem
+  the_memory : operand_mem_gen
   generic map(
-    n => C_NR_BITS_TOTAL
+    width => C_NR_BITS_TOTAL,
+    nr_op => C_NR_OP,
+    nr_m  => C_NR_M
   )
   port map(
     data_in        => data_in,
@@ -150,13 +157,17 @@ begin
     load_result    => load_result,
     result_dest_op => result_dest_op,
     collision      => collision,
-    clk            => clk
+    clk            => clk,
+    modulus_sel     => modulus_sel
   );
   
 	result_dest_op <= dest_op_single when exp_m = '0' else "11"; -- in autorun mode we always store the result in operand3
 	
   -- A fifo for auto-run operand selection
-  the_exponent_fifo : fifo_primitive 
+  the_exponent_fifo : fifo_generic
+  generic map(
+    depth => C_FIFO_DEPTH
+  )
   port map(
     clk    => clk,
     din    => fifo_din,
