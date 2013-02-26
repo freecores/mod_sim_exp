@@ -1,13 +1,21 @@
 #VCOM    = /usr/local/bin/vcom 
-VCOMOPS = -explicit -check_synthesis -2002 -quiet 
+VCOMOPS = -explicit -check_synthesis -2002 -quiet
+VLOGOPS = -vopt -nocovercells
 #MAKEFLAGS = --silent
 HDL_DIR = ../rtl/vhdl/
+VER_DIR = ../rtl/verilog/
 
 
 ##
 # avs_aes hdl files
 ##
-CORE_SRC =$(HDL_DIR)/core/mod_sim_exp_pkg.vhd \
+CORE_SRC =$(HDL_DIR)/core/std_functions.vhd \
+		 $(HDL_DIR)/core/mod_sim_exp_pkg.vhd \
+		 $(HDL_DIR)/ram/dpram_generic.vhd \
+		 $(HDL_DIR)/ram/tdpram_generic.vhd \
+		 $(HDL_DIR)/core/fifo_generic.vhd \
+		 $(HDL_DIR)/core/modulus_ram_gen.vhd \
+		 $(HDL_DIR)/core/operand_ram_gen.vhd \
 		 $(HDL_DIR)/core/adder_block.vhd \
 	 	 $(HDL_DIR)/core/autorun_cntrl.vhd \
 		 $(HDL_DIR)/core/cell_1b_adder.vhd \
@@ -34,6 +42,11 @@ CORE_SRC =$(HDL_DIR)/core/mod_sim_exp_pkg.vhd \
 		 $(HDL_DIR)/core/sys_pipeline.vhd \
 		 $(HDL_DIR)/core/mont_multiplier.vhd \
 
+VER_SRC =$(VER_DIR)generic_spram.v \
+		$(VER_DIR)generic_dpram.v \
+		$(VER_DIR)generic_tpram.v \
+		$(VER_DIR)generic_fifo_sc_a.v \
+		$(VER_DIR)generic_fifo_sc_b.v \
 
 ##
 # Testbench HDL file
@@ -59,7 +72,9 @@ mod_sim_exp_com: mod_sim_exp_lib
 	#echo --
 	#echo building Modular Exponentiation Core
 	#echo --
-	vcom $(VCOMOPS) -work mod_sim_exp  $(CORE_SRC)
+	#vlog $(VLOGOPS) -work mod_sim_exp $(VER_SRC)
+	vcom $(VCOMOPS) -work mod_sim_exp $(CORE_SRC)
+	#echo Done!
 
 mod_sim_exp_tb: work_lib
 	#echo --

@@ -773,10 +773,13 @@ package mod_sim_exp_pkg is
   -- 
   component mod_sim_exp_core is
     generic(
-      C_NR_BITS_TOTAL : integer := 1536;
+      C_NR_BITS_TOTAL   : integer := 1536;
       C_NR_STAGES_TOTAL : integer := 96;
-      C_NR_STAGES_LOW : integer := 32;
-      C_SPLIT_PIPELINE : boolean := true
+      C_NR_STAGES_LOW   : integer := 32;
+      C_SPLIT_PIPELINE  : boolean := true;
+      C_NR_OP           : integer := 4;
+      C_NR_M            : integer := 2;
+      C_FIFO_DEPTH      : integer := 32
     );
     port(
       clk   : in  std_logic;
@@ -800,8 +803,10 @@ package mod_sim_exp_pkg is
       y_sel_single   : in  std_logic_vector (1 downto 0); -- single multiplication y operand selection
       dest_op_single : in  std_logic_vector (1 downto 0); -- result destination operand selection
       p_sel          : in  std_logic_vector (1 downto 0); -- pipeline part selection
-      calc_time      : out std_logic
+      calc_time      : out std_logic;
+      modulus_sel    : in std_logic_vector(log2(C_NR_M)-1 downto 0)
     );
   end component mod_sim_exp_core;
+
   
 end package mod_sim_exp_pkg;

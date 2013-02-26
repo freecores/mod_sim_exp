@@ -100,6 +100,7 @@ entity user_logic is
     C_NR_STAGES_TOTAL : integer := 96;
     C_NR_STAGES_LOW   : integer := 32;
     C_SPLIT_PIPELINE  : boolean := true;
+    C_FIFO_DEPTH      : integer := 32;
     -- ADD USER GENERICS ABOVE THIS LINE ---------------
 
     -- DO NOT EDIT BELOW THIS LINE ---------------------
@@ -183,6 +184,7 @@ architecture IMP of user_logic is
   signal core_x_sel_single              : std_logic_vector(1 downto 0);
   signal core_y_sel_single              : std_logic_vector(1 downto 0);
   signal core_flags                     : std_logic_vector(15 downto 0);
+  signal core_modulus_sel               : std_logic_vector(0 downto 0);
 
   ------------------------------------------------------------------
   -- Signals for multiplier core memory space
@@ -384,12 +386,14 @@ begin
   ------------------------------------------
   -- Map slv_reg0 bits to core control signals 
   ------------------------------------------
-  core_start <= slv_reg0(8);
-  core_exp_m <= slv_reg0(9);
+  
   core_p_sel <= slv_reg0(0 to 1);
   core_dest_op_single <= slv_reg0(2 to 3);
   core_x_sel_single <= slv_reg0(4 to 5);
   core_y_sel_single <= slv_reg0(6 to 7);
+  core_start <= slv_reg0(8);
+  core_exp_m <= slv_reg0(9);
+  core_modulus_sel <= slv_reg0(10 to 10);
 
   ------------------------------------------
   -- Multiplier core instance
@@ -399,7 +403,10 @@ begin
     C_NR_BITS_TOTAL   => C_NR_BITS_TOTAL,
     C_NR_STAGES_TOTAL => C_NR_STAGES_TOTAL,
     C_NR_STAGES_LOW   => C_NR_STAGES_LOW,
-    C_SPLIT_PIPELINE  => C_SPLIT_PIPELINE
+    C_SPLIT_PIPELINE  => C_SPLIT_PIPELINE,
+    C_NR_OP           => 4,
+    C_NR_M            => 2,
+    C_FIFO_DEPTH      => C_FIFO_DEPTH    
   )
   port map(
     clk   => Bus2IP_Clk,
@@ -423,7 +430,8 @@ begin
     y_sel_single   => core_y_sel_single,
     dest_op_single => core_dest_op_single,
     p_sel          => core_p_sel,
-    calc_time      => calc_time
+    calc_time      => calc_time,
+    modulus_sel    => core_modulus_sel
   );
 
 

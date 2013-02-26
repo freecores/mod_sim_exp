@@ -162,6 +162,7 @@ entity mod_sim_exp_IPcore is
     C_NR_STAGES_TOTAL : integer := 96;
     C_NR_STAGES_LOW   : integer := 32;
     C_SPLIT_PIPELINE  : boolean := true;
+    C_FIFO_DEPTH      : integer := 32;
     -- ADD USER GENERICS ABOVE THIS LINE ---------------
 
     -- DO NOT EDIT BELOW THIS LINE ---------------------
@@ -577,6 +578,7 @@ begin
       C_NR_STAGES_TOTAL => C_NR_STAGES_TOTAL,
       C_NR_STAGES_LOW   => C_NR_STAGES_LOW,
       C_SPLIT_PIPELINE  => C_SPLIT_PIPELINE,
+      C_FIFO_DEPTH      => C_FIFO_DEPTH,
       -- MAP USER GENERICS ABOVE THIS LINE ---------------
 
       C_SLV_AWIDTH                   => USER_SLV_AWIDTH,
