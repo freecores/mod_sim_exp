@@ -75,7 +75,12 @@ architecture test of mod_sim_exp_core_tb is
   constant C_NR_BITS_TOTAL   : integer := 1536;
   constant C_NR_STAGES_TOTAL : integer := 96;
   constant C_NR_STAGES_LOW   : integer := 32;
-  constant C_SPLIT_PIPELINE  : boolean := true;
+  constant C_SPLIT_PIPELINE  : boolean := true; 
+  constant C_NR_OP           : integer := 4;  -- leave on 4 for simulation
+  constant C_NR_M            : integer := 2;  -- leave on 2 for simulation
+  constant C_FIFO_DEPTH      : integer := 32; -- set to (maximum exponent width)/16
+  constant C_MEM_STYLE       : string  := "generic"; -- xil_prim, generic, asym are valid options
+  constant C_DEVICE          : string  := "xilinx";  -- xilinx, altera are valid options
   
   -- extra calculated constants
   constant NR_BITS_LOW : integer := (C_NR_BITS_TOTAL/C_NR_STAGES_TOTAL)*C_NR_STAGES_LOW;
@@ -554,10 +559,12 @@ begin
         for i in (exponent_width/16)-1 downto 0 loop
           core_fifo_din <= e1((i*16)+15 downto (i*16)) & e0((i*16)+15 downto (i*16));
           wait until rising_edge(clk);
+          assert (core_fifo_full='0') 
+            report "Fifo error, fifo full" severity failure;
           core_fifo_push <= '1';
           wait until rising_edge(clk);
           assert (core_fifo_full='0' and core_fifo_nopush='0') 
-            report "Fifo error, full or nopush" severity failure;
+            report "Fifo error, fifo nopush" severity failure;
           core_fifo_push <= '0';
           wait until rising_edge(clk);
         end loop;
@@ -671,7 +678,12 @@ generic map(
   C_NR_BITS_TOTAL   => C_NR_BITS_TOTAL,
   C_NR_STAGES_TOTAL => C_NR_STAGES_TOTAL,
   C_NR_STAGES_LOW   => C_NR_STAGES_LOW,
-  C_SPLIT_PIPELINE  => C_SPLIT_PIPELINE
+  C_SPLIT_PIPELINE  => C_SPLIT_PIPELINE,
+  C_NR_OP           => C_NR_OP,
+  C_NR_M            => C_NR_M,
+  C_FIFO_DEPTH      => C_FIFO_DEPTH,
+  C_MEM_STYLE       => C_MEM_STYLE, -- xil_prim, generic, asym are valid options
+  C_DEVICE          => C_DEVICE   -- xilinx, altera are valid options
 )
 port map(
   clk   => clk,
@@ -695,7 +707,8 @@ port map(
   y_sel_single   => core_y_sel_single,
   dest_op_single => core_dest_op_single,
   p_sel          => core_p_sel,
-  calc_time      => calc_time
+  calc_time      => calc_time,
+  modulus_sel    => "0"
 );
 
 end test;
