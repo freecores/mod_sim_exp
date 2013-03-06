@@ -67,7 +67,9 @@ entity mod_sim_exp_core is
     C_SPLIT_PIPELINE  : boolean := true;
     C_NR_OP           : integer := 4;
     C_NR_M            : integer := 2;
-    C_FIFO_DEPTH      : integer := 32
+    C_FIFO_DEPTH      : integer := 32;
+    C_MEM_STYLE       : string  := "xil_prim"; -- xil_prim, generic, asym are valid options
+    C_DEVICE          : string  := "xilinx"   -- xilinx, altera are valid options
   );
   port(
     clk   : in  std_logic;
@@ -75,7 +77,7 @@ entity mod_sim_exp_core is
       -- operand memory interface (plb shared memory)
     write_enable : in  std_logic; -- write data to operand ram
     data_in      : in  std_logic_vector (31 downto 0);  -- operand ram data in
-    rw_address   : in  std_logic_vector (log2(C_NR_OP)+log2(C_NR_BITS_TOTAL/32) downto 0);   -- operand ram address bus
+    rw_address   : in  std_logic_vector (log2(C_NR_OP)+log2(C_NR_BITS_TOTAL/32) downto 0); -- operand ram address bus
     data_out     : out std_logic_vector (31 downto 0);  -- operand ram data out
     collision    : out std_logic; -- write collision
       -- op_sel fifo interface
@@ -92,25 +94,25 @@ entity mod_sim_exp_core is
     dest_op_single : in  std_logic_vector (log2(C_NR_OP)-1 downto 0); -- result destination operand selection
     p_sel          : in  std_logic_vector (1 downto 0); -- pipeline part selection
     calc_time      : out std_logic;
-    modulus_sel	   : in std_logic_vector(log2(C_NR_M)-1 downto 0)
+    modulus_sel	   : in std_logic_vector(log2(C_NR_M)-1 downto 0) -- selects which modulus to use for multiplications
   );
 end mod_sim_exp_core;
 
 
 architecture Structural of mod_sim_exp_core is
   -- data busses
-  signal xy   : std_logic_vector(C_NR_BITS_TOTAL-1 downto 0);  -- x and y operand data bus RAM -> multiplier
-  signal m    : std_logic_vector(C_NR_BITS_TOTAL-1 downto 0);  -- modulus data bus RAM -> multiplier
-  signal r    : std_logic_vector(C_NR_BITS_TOTAL-1 downto 0);  -- result data bus RAM <- multiplier
-  
+  signal xy : std_logic_vector(C_NR_BITS_TOTAL-1 downto 0);  -- x and y operand data bus RAM -> multiplier
+  signal m  : std_logic_vector(C_NR_BITS_TOTAL-1 downto 0);  -- modulus data bus RAM -> multiplier
+  signal r  : std_logic_vector(C_NR_BITS_TOTAL-1 downto 0);  -- result data bus RAM <- multiplier
+
   -- control signals
-  signal op_sel           : std_logic_vector(1 downto 0); -- operand selection 
-  signal result_dest_op   : std_logic_vector(1 downto 0); -- result destination operand
-  signal mult_ready       : std_logic;
-  signal start_mult       : std_logic;
+  signal op_sel         : std_logic_vector(1 downto 0); -- operand selection
+  signal result_dest_op : std_logic_vector(1 downto 0); -- result destination operand
+  signal mult_ready     : std_logic;
+  signal start_mult     : std_logic;
   signal load_x         : std_logic;
-  signal load_result      : std_logic;
-  
+  signal load_result    : std_logic;
+
   -- fifo signals
   signal fifo_empty : std_logic;
   signal fifo_pop   : std_logic;
@@ -121,9 +123,9 @@ begin
   -- The actual multiplier
   the_multiplier : mont_multiplier
   generic map(
-    n  => C_NR_BITS_TOTAL,
-    t  => C_NR_STAGES_TOTAL,
-    tl => C_NR_STAGES_LOW,
+    n     => C_NR_BITS_TOTAL,
+    t     => C_NR_STAGES_TOTAL,
+    tl    => C_NR_STAGES_LOW,
     split => C_SPLIT_PIPELINE
   )
   port map(
@@ -139,11 +141,13 @@ begin
   );
 
   -- Block ram memory for storing the operands and the modulus
-  the_memory : operand_mem_gen
+  the_memory : operand_mem
   generic map(
-    width => C_NR_BITS_TOTAL,
-    nr_op => C_NR_OP,
-    nr_m  => C_NR_M
+    width     => C_NR_BITS_TOTAL,
+    nr_op     => C_NR_OP,
+    nr_m      => C_NR_M,
+    mem_style => C_MEM_STYLE,
+    device    => C_DEVICE
   )
   port map(
     data_in        => data_in,
@@ -163,24 +167,41 @@ begin
   
 	result_dest_op <= dest_op_single when exp_m = '0' else "11"; -- in autorun mode we always store the result in operand3
 	
-  -- A fifo for auto-run operand selection
-  the_exponent_fifo : fifo_generic
-  generic map(
-    depth => C_FIFO_DEPTH
-  )
-  port map(
-    clk    => clk,
-    din    => fifo_din,
-    dout   => fifo_dout,
-    empty  => fifo_empty,
-    full   => fifo_full,
-    push   => fifo_push,
-    pop    => fifo_pop,
-    reset  => reset,
-    nopop  => fifo_nopop,
-    nopush => fifo_nopush
-  );
-	
+  -- A fifo for exponentiation mode
+  xil_prim_fifo : if C_MEM_STYLE="xil_prim" generate
+    the_exponent_fifo : fifo_primitive
+    port map(
+      clk    => clk,
+      din    => fifo_din,
+      dout   => fifo_dout,
+      empty  => fifo_empty,
+      full   => fifo_full,
+      push   => fifo_push,
+      pop    => fifo_pop,
+      reset  => reset,
+      nopop  => fifo_nopop,
+      nopush => fifo_nopush
+    );
+  end generate;
+	gen_fifo : if (C_MEM_STYLE="generic") or (C_MEM_STYLE="asym") generate
+    the_exponent_fifo : fifo_generic
+    generic map(
+      depth => C_FIFO_DEPTH
+    )
+    port map(
+      clk    => clk,
+      din    => fifo_din,
+      dout   => fifo_dout,
+      empty  => fifo_empty,
+      full   => fifo_full,
+      push   => fifo_push,
+      pop    => fifo_pop,
+      reset  => reset,
+      nopop  => fifo_nopop,
+      nopush => fifo_nopush
+    );
+  end generate;
+  
   -- The control logic for the core
   the_control_unit : mont_ctrl 
   port map(

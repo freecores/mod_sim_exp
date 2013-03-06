@@ -53,6 +53,7 @@ use ieee.std_logic_unsigned.all;
 use ieee.std_logic_arith.all;
 
 library mod_sim_exp;
+use mod_sim_exp.mod_sim_exp_pkg.all;
 use mod_sim_exp.std_functions.all;
 
 entity fifo_generic is
@@ -132,7 +133,7 @@ begin
   pop_i <= pop and not empty_i;
   
   -- Block RAM
-  ramblock: entity mod_sim_exp.dpram_generic
+  ramblock: dpram_generic
     generic map(
       depth => depth+1
     )

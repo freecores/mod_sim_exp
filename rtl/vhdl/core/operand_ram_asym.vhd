@@ -171,7 +171,7 @@ begin
           doutB => operand_out((i+1)*RAMblock_maxwidth-1 downto i*RAMblock_maxwidth)
         );
         -- weA, weB
-        process (write_operand_i, write_result, operand_addr)
+        process (write_operand_i, operand_addr)
         begin
           if operand_addr(log2(width/32)-1 downto log2(RAMblock_maxwidth/32)) = conv_std_logic_vector(i,RAMselect_aw) then
             weA_RAM(i) <= write_operand_i;
@@ -220,7 +220,7 @@ begin
           doutB => operand_out(width-1 downto i*RAMblock_maxwidth)
         );
         -- weA, weB part
-        process (write_operand_i, write_result, operand_addr)
+        process (write_operand_i, operand_addr)
         begin
           if operand_addr(log2(width/32)-1 downto log2(RAMblock_maxwidth/32)) = conv_std_logic_vector(i,RAMselect_aw) then
             weA_part <= write_operand_i;

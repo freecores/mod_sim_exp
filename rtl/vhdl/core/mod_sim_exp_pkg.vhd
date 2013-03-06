@@ -467,6 +467,7 @@ package mod_sim_exp_pkg is
 
   ------------------------------ MEMORY ------------------------------
   
+  -------------------------- xil_prim specific -----------------------
   --------------------------------------------------------------------
   -- operand_dp
   --------------------------------------------------------------------
@@ -501,6 +502,70 @@ package mod_sim_exp_pkg is
       douta : out std_logic_vector(511 downto 0)
     );
   end component operands_sp;
+  
+  --------------------------------------------------------------------
+  -- fifo_primitive
+  --------------------------------------------------------------------
+  --    a xilinx fifo primitive wrapper
+  -- 
+  component fifo_primitive is
+    port (
+      clk    : in  std_logic;
+      din    : in  std_logic_vector (31 downto 0);
+      dout   : out  std_logic_vector (31 downto 0);
+      empty  : out  std_logic;
+      full   : out  std_logic;
+      push   : in  std_logic;
+      pop    : in  std_logic;
+      reset  : in std_logic;
+      nopop  : out std_logic;
+      nopush : out std_logic
+    );
+  end component fifo_primitive;
+  
+  --------------------------------------------------------------------
+  -- operand_ram
+  --------------------------------------------------------------------
+  --    RAM for the operands, fixed width of 1536-bit and depth of 4
+  --    uses xilinx primitives
+  --
+  component operand_ram is
+    port(
+      -- global ports
+      clk       : in std_logic;
+      collision : out std_logic;
+      -- bus side connections (32-bit serial)
+      operand_addr   : in std_logic_vector(5 downto 0);
+      operand_in     : in std_logic_vector(31 downto 0);
+      operand_in_sel : in std_logic_vector(1 downto 0);
+      result_out     : out std_logic_vector(31 downto 0);
+      write_operand  : in std_logic;
+      -- multiplier side connections (1536 bit parallel)
+      result_dest_op  : in std_logic_vector(1 downto 0);
+      operand_out     : out std_logic_vector(1535 downto 0);
+      operand_out_sel : in std_logic_vector(1 downto 0); -- controlled by bus side
+      write_result    : in std_logic;
+      result_in       : in std_logic_vector(1535 downto 0)
+    );
+  end component operand_ram;
+  
+  --------------------------------------------------------------------
+  -- modulus_ram
+  --------------------------------------------------------------------
+  --    RAM for the modulus, fixed width of 1536-bit, uses xilinx primitives
+  --
+  component modulus_ram is
+    port(
+      clk           : in std_logic;
+      modulus_addr  : in std_logic_vector(5 downto 0);
+      write_modulus : in std_logic;
+      modulus_in    : in std_logic_vector(31 downto 0);
+      modulus_out   : out std_logic_vector(1535 downto 0)
+    );
+  end component modulus_ram;
+  
+  
+  ------------------------- generic modules --------------------------
   
   --------------------------------------------------------------------
   -- dpram_generic
@@ -550,26 +615,6 @@ package mod_sim_exp_pkg is
     );
   end component tdpram_generic;
   
-   --------------------------------------------------------------------
-  -- fifo_primitive
-  --------------------------------------------------------------------
-  --    a xilinx fifo primitive wrapper
-  -- 
-  component fifo_primitive is
-    port (
-      clk    : in  std_logic;
-      din    : in  std_logic_vector (31 downto 0);
-      dout   : out  std_logic_vector (31 downto 0);
-      empty  : out  std_logic;
-      full   : out  std_logic;
-      push   : in  std_logic;
-      pop    : in  std_logic;
-      reset  : in std_logic;
-      nopop  : out std_logic;
-      nopush : out std_logic
-    );
-  end component fifo_primitive;
-  
   --------------------------------------------------------------------
   -- fifo_generic
   --------------------------------------------------------------------
@@ -595,24 +640,9 @@ package mod_sim_exp_pkg is
   end component fifo_generic;
   
   --------------------------------------------------------------------
-  -- modulus_ram
-  --------------------------------------------------------------------
-  --    RAM for the modulus, fixed width of 1536-bit, uses xilinx primitives
-  --
-  component modulus_ram is
-    port(
-      clk           : in std_logic;
-      modulus_addr  : in std_logic_vector(5 downto 0);
-      write_modulus : in std_logic;
-      modulus_in    : in std_logic_vector(31 downto 0);
-      modulus_out   : out std_logic_vector(1535 downto 0)
-    );
-  end component modulus_ram;
-  
-  --------------------------------------------------------------------
   -- modulus_ram_gen
   --------------------------------------------------------------------
-  --    behavorial description of a RAM to hold the modulus, with 
+  --    structural description of a RAM to hold the modulus, with 
   --    adjustable width and depth(nr of moduluses)
   --
   component modulus_ram_gen is
@@ -663,82 +693,204 @@ package mod_sim_exp_pkg is
     );
   end component operand_ram_gen;
   
+  
+  
+  ------------------------ asymmetric modules ------------------------
+  
   --------------------------------------------------------------------
-  -- operand_ram
+  -- dpram_asym
   --------------------------------------------------------------------
-  --    RAM for the operands, fixed width of 1536-bit and depth of 4
-  --    uses xilinx primitives
+  --    behavorial description of an asymmetric dual port ram
+  --    with one (wrwidth)-bit write port and one 32-bit read
+  --    port. Made using the templates of xilinx and altera for
+  --    asymmetric ram.
   --
-  component operand_ram is
-    port( -- write_operand_ack voorzien?
-      -- global ports
-      clk       : in std_logic;
-      collision : out std_logic;
-      -- bus side connections (32-bit serial)
-      operand_addr   : in std_logic_vector(5 downto 0);
-      operand_in     : in std_logic_vector(31 downto 0);
-      operand_in_sel : in std_logic_vector(1 downto 0);
-      result_out     : out std_logic_vector(31 downto 0);
-      write_operand  : in std_logic;
-      -- multiplier side connections (1536 bit parallel)
-      result_dest_op  : in std_logic_vector(1 downto 0);
-      operand_out     : out std_logic_vector(1535 downto 0);
-      operand_out_sel : in std_logic_vector(1 downto 0); -- controlled by bus side
-      write_result    : in std_logic;
-      result_in       : in std_logic_vector(1535 downto 0)
-    );
-  end component operand_ram;
-  
-  
-  component operand_mem is
+  component dpram_asym is
     generic(
-      n : integer := 1536
+      rddepth : integer := 4; -- nr of 32-bit words
+      wrwidth : integer := 2; -- write width, must be smaller than or equal to 32
+      device  : string  := "xilinx"  -- device template to use
     );
     port(
-        -- data interface (plb side)
-      data_in    : in  std_logic_vector(31 downto 0);
-      data_out   : out  std_logic_vector(31 downto 0);
-      rw_address : in  std_logic_vector(8 downto 0);
-      write_enable : in  std_logic;
-        -- address structure:
-        -- bit:  8   -> '1': modulus
-        --              '0': operands
-        -- bits: 7-6 -> operand_in_sel in case of bit 8 = '0'
-        --              don't care in case of modulus
-        -- bits: 5-0 -> modulus_addr / operand_addr resp.
-  
-        -- operand interface (multiplier side)
-      op_sel    : in  std_logic_vector(1 downto 0);
-      xy_out    : out  std_logic_vector((n-1) downto 0);
-      m         : out  std_logic_vector((n-1) downto 0);
-      result_in : in std_logic_vector((n-1) downto 0);
-      -- control signals
-      load_result    : in std_logic;
-      result_dest_op : in std_logic_vector(1 downto 0);
-      collision      : out std_logic;
-        -- system clock
-      clk : in  std_logic
+      clk : in std_logic;
+      -- write port
+      waddr : in std_logic_vector(log2((rddepth*32)/wrwidth)-1 downto 0);
+      we    : in std_logic;
+      din   : in std_logic_vector(wrwidth-1 downto 0);
+      -- read port
+      raddr : in std_logic_vector(log2(rddepth)-1 downto 0);
+      dout  : out std_logic_vector(31 downto 0)
     );
-  end component operand_mem;
+  end component dpram_asym;
   
   --------------------------------------------------------------------
-  -- operand_mem_gen
+  -- dpramblock_asym
   --------------------------------------------------------------------
-  --    generic description of the cores memory, places the modulus
-  --    and operands in one addres and data bus
+  --    structural description of an asymmetric dual port ram
+  --    with one 32-bit write port and one (width)-bit read
+  --    port.
+  -- 
+  component dpramblock_asym is
+    generic(
+      width  : integer := 256;  -- read width
+      depth  : integer := 2;    -- nr of (width)-bit words
+      device : string  := "xilinx"
+    );
+    port(
+      clk : in std_logic;
+      -- write port
+      waddr : in std_logic_vector(log2((width*depth)/32)-1 downto 0);
+      we    : in std_logic;
+      din   : in std_logic_vector(31 downto 0);
+      -- read port
+      raddr : in std_logic_vector(log2(depth)-1 downto 0);
+      dout  : out std_logic_vector(width-1 downto 0)
+    );
+  end component dpramblock_asym;
+  
+  --------------------------------------------------------------------
+  -- tdpram_asym
+  --------------------------------------------------------------------
+  --    behavorial description of an asymmetric true dual port
+  --    ram with one (widthA)-bit read/write port and one 32-bit
+  --    read/write port. Made using the templates of xilinx and
+  --    altera for asymmetric ram.
+  --
+  component tdpram_asym is
+    generic(
+      depthB : integer := 4; -- nr of 32-bit words
+      widthA : integer := 2;  -- port A width, must be smaller than or equal to 32
+      device : string  := "xilinx"
+    );
+    port(
+      clk : in std_logic;
+      -- port A (widthA)-bit
+      addrA : in std_logic_vector(log2((depthB*32)/widthA)-1 downto 0);
+      weA   : in std_logic;
+      dinA  : in std_logic_vector(widthA-1 downto 0);
+      doutA : out std_logic_vector(widthA-1 downto 0);
+      -- port B 32-bit
+      addrB : in std_logic_vector(log2(depthB)-1 downto 0);
+      weB   : in std_logic;
+      dinB  : in std_logic_vector(31 downto 0);
+      doutB : out std_logic_vector(31 downto 0)
+    );
+  end component tdpram_asym;
+  
+  --------------------------------------------------------------------
+  -- tdpramblock_asym
+  --------------------------------------------------------------------
+  --    structural description of an asymmetric true dual port
+  --    ram with one 32-bit read/write port and one (width)-bit
+  --    read/write port.
+  --
+  component tdpramblock_asym is
+    generic (
+      depth  : integer := 4;    -- nr of (width)-bit words
+      width  : integer := 512;  -- width of portB
+      device : string  := "xilinx"
+    );
+    port  (
+      clk : in std_logic;
+      -- port A 32-bit
+      addrA : in std_logic_vector(log2((width*depth)/32)-1 downto 0);
+      weA   : in std_logic;
+      dinA  : in std_logic_vector(31 downto 0);
+      doutA : out std_logic_vector(31 downto 0);
+      -- port B (width)-bit
+      addrB : in std_logic_vector(log2(depth)-1 downto 0);
+      weB   : in std_logic;
+      dinB  : in std_logic_vector(width-1 downto 0);
+      doutB : out std_logic_vector(width-1 downto 0)
+    );
+  end component tdpramblock_asym;
+  
+  --------------------------------------------------------------------
+  -- modulus_ram_asym
+  --------------------------------------------------------------------
+  --    BRAM memory and logic to store the modulus, due to the
+  --    achitecture, a minimum depth of 2 is needed for this
+  --    module to be inferred into blockram, this version is
+  --    slightly more performant than modulus_ram_gen and uses
+  --    less resources. but does not work on every fpga, only
+  --    the ones that support asymmetric rams.
+  --
+  component modulus_ram_asym is
+    generic(
+      width : integer := 1536;  -- must be a multiple of 32
+      depth : integer := 2;     -- nr of moduluses
+      device : string := "xilinx"
+    );
+    port(
+      clk            : in std_logic;
+        -- bus side
+      write_modulus  : in std_logic; -- write enable
+      modulus_in_sel : in std_logic_vector(log2(depth)-1 downto 0); -- modulus operand to write to
+      modulus_addr   : in std_logic_vector(log2((width)/32)-1 downto 0); -- modulus word(32-bit) address
+      modulus_in     : in std_logic_vector(31 downto 0); -- modulus word data in
+      modulus_sel    : in std_logic_vector(log2(depth)-1 downto 0); -- selects the modulus to use for multiplications
+        -- multiplier side
+      modulus_out    : out std_logic_vector(width-1 downto 0)
+    );
+  end component modulus_ram_asym;
+  
+  --------------------------------------------------------------------
+  -- operand_ram_asym
+  --------------------------------------------------------------------
+  --    BRAM memory and logic to store the operands, due to the
+  --    achitecture, a minimum depth of 2 is needed for this
+  --    module to be inferred into blockram, this version is
+  --    slightly more performant than operand_ram_gen and uses
+  --    less resources. but does not work on every fpga, only
+  --    the ones that support asymmetric rams. 
+  --
+  component operand_ram_asym is
+    generic(
+      width  : integer := 1536; -- width of the operands
+      depth  : integer := 4;    -- nr of operands
+      device : string  := "xilinx"
+    );
+    port(
+        -- global ports
+      clk       : in std_logic;
+      collision : out std_logic; -- 1 if simultaneous write on RAM
+        -- bus side connections (32-bit serial)
+      write_operand  : in std_logic; -- write_enable
+      operand_in_sel : in std_logic_vector(log2(depth)-1 downto 0); -- operand to write to
+      operand_addr   : in std_logic_vector(log2(width/32)-1 downto 0); -- address of operand word to write
+      operand_in     : in std_logic_vector(31 downto 0);  -- operand word(32-bit) to write
+      result_out     : out std_logic_vector(31 downto 0); -- operand out, reading is always result operand
+      operand_out_sel : in std_logic_vector(log2(depth)-1 downto 0); -- operand to give to multiplier
+        -- multiplier side connections (width-bit parallel)
+      result_dest_op  : in std_logic_vector(log2(depth)-1 downto 0); -- operand select for result
+      operand_out     : out std_logic_vector(width-1 downto 0); -- operand out to multiplier
+      write_result    : in std_logic; -- write enable for multiplier side
+      result_in       : in std_logic_vector(width-1 downto 0) -- result to write from multiplier
+    );
+  end component operand_ram_asym;
+  
+  --------------------------------------------------------------------
+  -- operand_mem
+  --------------------------------------------------------------------
+  --    RAM memory and logic to the store operands and the
+  --    modulus for the montgomery multiplier, the user has a
+  --    choise between 3 memory styles, more detail in the
+  --    documentation.
   --
   --    address structure:
   --    bit: highest   ->  '1': modulus
   --                       '0': operands
   --    bits: (highest-1)-log2(width/32) -> operand_in_sel in case of highest bit = '0'
-  --                                         modulus_in_sel in case of highest bit = '1'
+  --                                        modulus_in_sel in case of highest bit = '1'
   --    bits: (log2(width/32)-1)-0 -> modulus_addr / operand_addr resp.
   -- 
-  component operand_mem_gen is
+  component operand_mem is
     generic(
-      width : integer := 1536; -- width of the operands
-      nr_op : integer := 4; -- nr of operand storages, has to be greater than nr_m
-      nr_m  : integer := 2  -- nr of modulus storages
+      width     : integer := 1536; -- width of the operands
+      nr_op     : integer := 4; -- nr of operand storages, has to be greater than nr_m
+      nr_m      : integer := 2; -- nr of modulus storages
+      mem_style : string  := "asym"; -- xil_prim, generic, asym are valid options
+      device    : string  := "altera"   -- xilinx, altera are valid options
     );
     port(
       -- system clock
@@ -759,7 +911,8 @@ package mod_sim_exp_pkg is
       collision      : out std_logic;
       modulus_sel    : in std_logic_vector(log2(nr_m)-1 downto 0)
     );
-  end component operand_mem_gen;
+  end component operand_mem;
+  
   
   
   ---------------------------- TOP LEVEL -----------------------------
@@ -779,7 +932,9 @@ package mod_sim_exp_pkg is
       C_SPLIT_PIPELINE  : boolean := true;
       C_NR_OP           : integer := 4;
       C_NR_M            : integer := 2;
-      C_FIFO_DEPTH      : integer := 32
+      C_FIFO_DEPTH      : integer := 32;
+      C_MEM_STYLE       : string  := "generic"; -- xil_prim, generic, asym are valid options
+      C_DEVICE          : string  := "xilinx"   -- xilinx, altera are valid options
     );
     port(
       clk   : in  std_logic;
@@ -787,7 +942,7 @@ package mod_sim_exp_pkg is
         -- operand memory interface (plb shared memory)
       write_enable : in  std_logic; -- write data to operand ram
       data_in      : in  std_logic_vector (31 downto 0);  -- operand ram data in
-      rw_address   : in  std_logic_vector (8 downto 0);   -- operand ram address bus
+      rw_address   : in  std_logic_vector (log2(C_NR_OP)+log2(C_NR_BITS_TOTAL/32) downto 0); -- operand ram address bus
       data_out     : out std_logic_vector (31 downto 0);  -- operand ram data out
       collision    : out std_logic; -- write collision
         -- op_sel fifo interface
@@ -799,12 +954,12 @@ package mod_sim_exp_pkg is
       start          : in  std_logic; -- start multiplication/exponentiation
       exp_m          : in  std_logic; -- single multiplication if low, exponentiation if high
       ready          : out std_logic; -- calculations done
-      x_sel_single   : in  std_logic_vector (1 downto 0); -- single multiplication x operand selection
-      y_sel_single   : in  std_logic_vector (1 downto 0); -- single multiplication y operand selection
-      dest_op_single : in  std_logic_vector (1 downto 0); -- result destination operand selection
+      x_sel_single   : in  std_logic_vector (log2(C_NR_OP)-1 downto 0); -- single multiplication x operand selection
+      y_sel_single   : in  std_logic_vector (log2(C_NR_OP)-1 downto 0); -- single multiplication y operand selection
+      dest_op_single : in  std_logic_vector (log2(C_NR_OP)-1 downto 0); -- result destination operand selection
       p_sel          : in  std_logic_vector (1 downto 0); -- pipeline part selection
       calc_time      : out std_logic;
-      modulus_sel    : in std_logic_vector(log2(C_NR_M)-1 downto 0)
+      modulus_sel    : in std_logic_vector(log2(C_NR_M)-1 downto 0) -- selects which modulus to use for multiplications
     );
   end component mod_sim_exp_core;
 
