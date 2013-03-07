@@ -1,5 +1,5 @@
 ------------------------------------------------------------------------------
--- mont_mult1536.vhd - entity/architecture pair
+-- mod_sim_exp_IPcore.vhd - entity/architecture pair
 ------------------------------------------------------------------------------
 -- IMPORTANT:
 -- DO NOT MODIFY THIS FILE EXCEPT IN THE DESIGNATED SECTIONS.
@@ -32,8 +32,8 @@
 -- ***************************************************************************
 --
 ------------------------------------------------------------------------------
--- Filename:          mont_mult1536.vhd
--- Version:           2.00.a
+-- Filename:          mod_sim_exp_IPcore.vhd
+-- Version:           0.20
 -- Description:       Top level design, instantiates library components and user logic.
 -- Date:              Thu May 03 09:53:36 2012 (by Create and Import Peripheral Wizard)
 -- VHDL Standard:     VHDL'93
@@ -163,6 +163,8 @@ entity mod_sim_exp_IPcore is
     C_NR_STAGES_LOW   : integer := 32;
     C_SPLIT_PIPELINE  : boolean := true;
     C_FIFO_DEPTH      : integer := 32;
+    C_MEM_STYLE       : string  := "xil_prim"; -- xil_prim, generic, asym are valid options
+    C_DEVICE          : string  := "xilinx";    -- xilinx, altera are valid options
     -- ADD USER GENERICS ABOVE THIS LINE ---------------
 
     -- DO NOT EDIT BELOW THIS LINE ---------------------
@@ -579,6 +581,8 @@ begin
       C_NR_STAGES_LOW   => C_NR_STAGES_LOW,
       C_SPLIT_PIPELINE  => C_SPLIT_PIPELINE,
       C_FIFO_DEPTH      => C_FIFO_DEPTH,
+      C_MEM_STYLE       => C_MEM_STYLE,
+      C_DEVICE          => C_DEVICE,
       -- MAP USER GENERICS ABOVE THIS LINE ---------------
 
       C_SLV_AWIDTH                   => USER_SLV_AWIDTH,
@@ -591,7 +595,7 @@ begin
     (
       -- MAP USER PORTS BELOW THIS LINE ------------------
       --USER ports mapped here
-    calc_time                      => calc_time,
+      calc_time                      => calc_time,
       -- MAP USER PORTS ABOVE THIS LINE ------------------
 
       Bus2IP_Clk                     => ipif_Bus2IP_Clk,

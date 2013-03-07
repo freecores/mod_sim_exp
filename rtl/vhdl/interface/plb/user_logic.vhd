@@ -101,6 +101,8 @@ entity user_logic is
     C_NR_STAGES_LOW   : integer := 32;
     C_SPLIT_PIPELINE  : boolean := true;
     C_FIFO_DEPTH      : integer := 32;
+    C_MEM_STYLE       : string  := "xil_prim"; -- xil_prim, generic, asym are valid options
+    C_DEVICE          : string  := "xilinx";    -- xilinx, altera are valid options
     -- ADD USER GENERICS ABOVE THIS LINE ---------------
 
     -- DO NOT EDIT BELOW THIS LINE ---------------------
@@ -406,7 +408,9 @@ begin
     C_SPLIT_PIPELINE  => C_SPLIT_PIPELINE,
     C_NR_OP           => 4,
     C_NR_M            => 2,
-    C_FIFO_DEPTH      => C_FIFO_DEPTH    
+    C_FIFO_DEPTH      => C_FIFO_DEPTH,
+    C_MEM_STYLE       => C_MEM_STYLE,
+    C_DEVICE          => C_DEVICE
   )
   port map(
     clk   => Bus2IP_Clk,
