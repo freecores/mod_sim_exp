@@ -406,8 +406,6 @@ begin
     C_NR_STAGES_TOTAL => C_NR_STAGES_TOTAL,
     C_NR_STAGES_LOW   => C_NR_STAGES_LOW,
     C_SPLIT_PIPELINE  => C_SPLIT_PIPELINE,
-    C_NR_OP           => 4,
-    C_NR_M            => 2,
     C_FIFO_DEPTH      => C_FIFO_DEPTH,
     C_MEM_STYLE       => C_MEM_STYLE,
     C_DEVICE          => C_DEVICE

@@ -65,8 +65,6 @@ entity mod_sim_exp_core is
     C_NR_STAGES_TOTAL : integer := 96;
     C_NR_STAGES_LOW   : integer := 32;
     C_SPLIT_PIPELINE  : boolean := true;
-    C_NR_OP           : integer := 4;
-    C_NR_M            : integer := 2;
     C_FIFO_DEPTH      : integer := 32;
     C_MEM_STYLE       : string  := "xil_prim"; -- xil_prim, generic, asym are valid options
     C_DEVICE          : string  := "xilinx"   -- xilinx, altera are valid options
@@ -77,7 +75,7 @@ entity mod_sim_exp_core is
       -- operand memory interface (plb shared memory)
     write_enable : in  std_logic; -- write data to operand ram
     data_in      : in  std_logic_vector (31 downto 0);  -- operand ram data in
-    rw_address   : in  std_logic_vector (log2(C_NR_OP)+log2(C_NR_BITS_TOTAL/32) downto 0); -- operand ram address bus
+    rw_address   : in  std_logic_vector (8 downto 0); -- operand ram address bus
     data_out     : out std_logic_vector (31 downto 0);  -- operand ram data out
     collision    : out std_logic; -- write collision
       -- op_sel fifo interface
@@ -89,17 +87,21 @@ entity mod_sim_exp_core is
     start          : in  std_logic; -- start multiplication/exponentiation
     exp_m          : in  std_logic; -- single multiplication if low, exponentiation if high
     ready          : out std_logic; -- calculations done
-    x_sel_single   : in  std_logic_vector (log2(C_NR_OP)-1 downto 0); -- single multiplication x operand selection
-    y_sel_single   : in  std_logic_vector (log2(C_NR_OP)-1 downto 0); -- single multiplication y operand selection
-    dest_op_single : in  std_logic_vector (log2(C_NR_OP)-1 downto 0); -- result destination operand selection
+    x_sel_single   : in  std_logic_vector (1 downto 0); -- single multiplication x operand selection
+    y_sel_single   : in  std_logic_vector (1 downto 0); -- single multiplication y operand selection
+    dest_op_single : in  std_logic_vector (1 downto 0); -- result destination operand selection
     p_sel          : in  std_logic_vector (1 downto 0); -- pipeline part selection
     calc_time      : out std_logic;
-    modulus_sel	   : in std_logic_vector(log2(C_NR_M)-1 downto 0) -- selects which modulus to use for multiplications
+    modulus_sel	   : in  std_logic   -- selects which modulus to use for multiplications
   );
 end mod_sim_exp_core;
 
 
 architecture Structural of mod_sim_exp_core is
+  -- constants
+  constant nr_op : integer := 4;
+  constant nr_m  : integer := 2;
+
   -- data busses
   signal xy : std_logic_vector(C_NR_BITS_TOTAL-1 downto 0);  -- x and y operand data bus RAM -> multiplier
   signal m  : std_logic_vector(C_NR_BITS_TOTAL-1 downto 0);  -- modulus data bus RAM -> multiplier
@@ -112,6 +114,7 @@ architecture Structural of mod_sim_exp_core is
   signal start_mult     : std_logic;
   signal load_x         : std_logic;
   signal load_result    : std_logic;
+  signal modulus_sel_i  : std_logic_vector(0 downto 0);
 
   -- fifo signals
   signal fifo_empty : std_logic;
@@ -144,8 +147,8 @@ begin
   the_memory : operand_mem
   generic map(
     width     => C_NR_BITS_TOTAL,
-    nr_op     => C_NR_OP,
-    nr_m      => C_NR_M,
+    nr_op     => nr_op,
+    nr_m      => nr_m,
     mem_style => C_MEM_STYLE,
     device    => C_DEVICE
   )
@@ -162,9 +165,10 @@ begin
     result_dest_op => result_dest_op,
     collision      => collision,
     clk            => clk,
-    modulus_sel     => modulus_sel
+    modulus_sel    => modulus_sel_i
   );
   
+  modulus_sel_i(0) <= modulus_sel;
 	result_dest_op <= dest_op_single when exp_m = '0' else "11"; -- in autorun mode we always store the result in operand3
 	
   -- A fifo for exponentiation mode
