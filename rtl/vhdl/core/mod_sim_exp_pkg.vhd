@@ -898,7 +898,7 @@ package mod_sim_exp_pkg is
       -- data interface (plb side)
       data_in      : in std_logic_vector(31 downto 0);
       data_out     : out std_logic_vector(31 downto 0);
-      rw_address   : in std_logic_vector(log2(nr_op)+log2(width/32) downto 0);
+      rw_address   : in std_logic_vector(8 downto 0);
       write_enable : in std_logic;
       -- operand interface (multiplier side)
       op_sel    : in std_logic_vector(log2(nr_op)-1 downto 0);
@@ -930,8 +930,6 @@ package mod_sim_exp_pkg is
       C_NR_STAGES_TOTAL : integer := 96;
       C_NR_STAGES_LOW   : integer := 32;
       C_SPLIT_PIPELINE  : boolean := true;
-      C_NR_OP           : integer := 4;
-      C_NR_M            : integer := 2;
       C_FIFO_DEPTH      : integer := 32;
       C_MEM_STYLE       : string  := "generic"; -- xil_prim, generic, asym are valid options
       C_DEVICE          : string  := "xilinx"   -- xilinx, altera are valid options
@@ -942,7 +940,7 @@ package mod_sim_exp_pkg is
         -- operand memory interface (plb shared memory)
       write_enable : in  std_logic; -- write data to operand ram
       data_in      : in  std_logic_vector (31 downto 0);  -- operand ram data in
-      rw_address   : in  std_logic_vector (log2(C_NR_OP)+log2(C_NR_BITS_TOTAL/32) downto 0); -- operand ram address bus
+      rw_address   : in  std_logic_vector (8 downto 0); -- operand ram address bus
       data_out     : out std_logic_vector (31 downto 0);  -- operand ram data out
       collision    : out std_logic; -- write collision
         -- op_sel fifo interface
@@ -954,12 +952,12 @@ package mod_sim_exp_pkg is
       start          : in  std_logic; -- start multiplication/exponentiation
       exp_m          : in  std_logic; -- single multiplication if low, exponentiation if high
       ready          : out std_logic; -- calculations done
-      x_sel_single   : in  std_logic_vector (log2(C_NR_OP)-1 downto 0); -- single multiplication x operand selection
-      y_sel_single   : in  std_logic_vector (log2(C_NR_OP)-1 downto 0); -- single multiplication y operand selection
-      dest_op_single : in  std_logic_vector (log2(C_NR_OP)-1 downto 0); -- result destination operand selection
+      x_sel_single   : in  std_logic_vector (1 downto 0); -- single multiplication x operand selection
+      y_sel_single   : in  std_logic_vector (1 downto 0); -- single multiplication y operand selection
+      dest_op_single : in  std_logic_vector (1 downto 0); -- result destination operand selection
       p_sel          : in  std_logic_vector (1 downto 0); -- pipeline part selection
       calc_time      : out std_logic;
-      modulus_sel    : in std_logic_vector(log2(C_NR_M)-1 downto 0) -- selects which modulus to use for multiplications
+      modulus_sel    : in std_logic -- selects which modulus to use for multiplications
     );
   end component mod_sim_exp_core;
 

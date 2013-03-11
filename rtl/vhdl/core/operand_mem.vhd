@@ -60,10 +60,10 @@ use mod_sim_exp.mod_sim_exp_pkg.all;
 use mod_sim_exp.std_functions.all;
 
 -- address structure:
--- bit: highest   ->  '1': modulus
---                    '0': operands
--- bits: (highest-1)-log2(width/32) -> operand_in_sel in case of highest bit = '0'
---                                     modulus_in_sel in case of highest bit = '1'
+-- bit: 8   ->  '1': modulus
+--              '0': operands
+-- bits: 7-6 -> operand_in_sel in case of highest bit = '0'
+--              modulus_in_sel in case of highest bit = '1'
 -- bits: (log2(width/32)-1)-0 -> modulus_addr / operand_addr resp.
 -- 
 entity operand_mem is
@@ -80,7 +80,7 @@ entity operand_mem is
     -- data interface (plb side)
     data_in      : in std_logic_vector(31 downto 0);
     data_out     : out std_logic_vector(31 downto 0);
-    rw_address   : in std_logic_vector(log2(nr_op)+log2(width/32) downto 0);
+    rw_address   : in std_logic_vector(8 downto 0);
     write_enable : in std_logic;
     -- operand interface (multiplier side)
     op_sel    : in std_logic_vector(log2(nr_op)-1 downto 0);
@@ -119,14 +119,14 @@ begin
 	-- map inputs
 	xy_addr_i <= rw_address(wordaddr_aw-1 downto 0);
 	m_addr_i <= rw_address(wordaddr_aw-1 downto 0);
-	operand_in_sel_i <= rw_address(total_aw-2 downto wordaddr_aw);
-	modulus_in_sel_i <= rw_address(wordaddr_aw+maddr_aw-1 downto wordaddr_aw);
+	operand_in_sel_i <= rw_address(7 downto 6);
+	modulus_in_sel_i <= rw_address(6 downto 6);
 	xy_data_i <= data_in;
 	m_data_i <= data_in;
   
   -- select right memory with highest address bit
-	load_op <= write_enable when (rw_address(total_aw-1) = '0') else '0';
-  load_m <= write_enable when (rw_address(total_aw-1) = '1') else '0';
+	load_op <= write_enable when (rw_address(8) = '0') else '0';
+  load_m <= write_enable when (rw_address(8) = '1') else '0';
 
   xil_prim_RAM : if mem_style="xil_prim" generate
     -- xy operand storage

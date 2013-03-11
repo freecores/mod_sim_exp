@@ -66,7 +66,7 @@ entity mod_sim_exp_core is
     C_NR_STAGES_LOW   : integer := 32;
     C_SPLIT_PIPELINE  : boolean := true;
     C_FIFO_DEPTH      : integer := 32;
-    C_MEM_STYLE       : string  := "xil_prim"; -- xil_prim, generic, asym are valid options
+    C_MEM_STYLE       : string  := "asym"; -- xil_prim, generic, asym are valid options
     C_DEVICE          : string  := "xilinx"   -- xilinx, altera are valid options
   );
   port(
