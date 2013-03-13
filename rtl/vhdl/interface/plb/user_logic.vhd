@@ -186,7 +186,7 @@ architecture IMP of user_logic is
   signal core_x_sel_single              : std_logic_vector(1 downto 0);
   signal core_y_sel_single              : std_logic_vector(1 downto 0);
   signal core_flags                     : std_logic_vector(15 downto 0);
-  signal core_modulus_sel               : std_logic_vector(0 downto 0);
+  signal core_modulus_sel               : std_logic;
 
   ------------------------------------------------------------------
   -- Signals for multiplier core memory space
@@ -395,7 +395,7 @@ begin
   core_y_sel_single <= slv_reg0(6 to 7);
   core_start <= slv_reg0(8);
   core_exp_m <= slv_reg0(9);
-  core_modulus_sel <= slv_reg0(10 to 10);
+  core_modulus_sel <= slv_reg0(10);
 
   ------------------------------------------
   -- Multiplier core instance
