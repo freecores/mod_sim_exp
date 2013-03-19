@@ -25,7 +25,18 @@ listed in the table below.
 		\rowcolor{Gray}
 		\textbf{Name} & \textbf{Description} & \textbf{VHDL Type} &\textbf{Default Value} \bigstrut\\
 		\hline
-		\multicolumn{4}{|l|}{\textit{\textbf{Memory configuration}}} \\
+		\multicolumn{4}{|l|}{\textit{\textbf{Memory configuration}}} \\		
+		\hline
+		\verb|C_FIFO_DEPTH| & depth of the generic FIFO, only applicable if \verb|C_MEM_STYLE| = \verb|"generic"| or \verb|"asym"|  & integer & 32 \bigstrut\\
+		\hline
+		\verb|C_MEM_STYLE| & the memory structure to use for the RAM, choice between 3 options: & string & \verb|"generic"| \bigstrut\\
+							& \verb|"xil_prim"| : use xilinx primitives & & \\
+      						& \verb|"generic"| : use general 32-bit RAMs & & \\
+      						& \verb|"asym"| : use asymmetric RAMs & & \\
+      						& (For more information see \ref{subsec:RAM_and_FIFO}) & & \bigstrut[b] \\
+		\hline
+		\verb|C_DEVICE| & device manufacturer: & string & \verb|"xilinx"| \\
+						& \verb|"xilinx"| or \verb|"altera"| &  &  \bigstrut\\
 		\hline
 		\verb|C_BASEADDR| & base address for the IP core's memory space & std\_logic\_vector & X"FFFFFFFF" \bigstrut\\
 		\hline

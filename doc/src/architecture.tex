@@ -51,12 +51,25 @@ Because a fully unrolled two-dimensional systolic implementation would require t
 \end{figure}
 
 \subsubsection{Stage and pipeline structure}
-The Montgomery algorithm uses a series of additions and right shifts to obtain the desired result. The main disadvantage is the carry propagation in the adder, and therefore a pipelined version is used. The length of the operands ($n$) and the number of pipeline stages can be chosen before synthesis. The user has the option to split the pipeline into 2 smaller parts so there are 3 operand lengths available during runtime\footnote{e.g. a total pipeline length of 1536 bit split into a part of 512 bit and a part of 1024 bit}.
+The Montgomery algorithm uses a series of additions and right shifts to obtain the desired result. The main disadvantage
+is the carry propagation in the adder, and therefore a pipelined version is used. The length of the operands ($n$) and
+the number of pipeline stages can be chosen before synthesis. The user has the option to split the pipeline into 2
+smaller parts so there are 3 operand lengths available during runtime\footnote{e.g. a total pipeline length of 1536 bit
+split into a part of 512 bit and a part of 1024 bit}.
 
-The stages and first and last cell logic design are presented in Figure~\ref{stage_structure}. Each stage takes in a part of the modulus $m$ and $y$ operand and for each step of the multiplication, a bit of the $x$ operand is fed to the pipeline (together with the generated $q$ signal), starting with the Least Significant Bit. The systolic array cells need the modulus $m$, the operand $y$ and the sum $m+y$ as an input. The result from the cells is latched into a register, and then passed back to the systolic cells for the next bit of $x$. During this pass the right shift operation is
-implemented. Each stage thus needs the least significant bit from the next stage to calculate the next step. Final reduction logic is also present in the stages for when the multiplication is complete.
+The stages and first and last cell logic design are presented in Figure~\ref{stage_structure}. Each stage takes in a
+part of the modulus $m$ and $y$ operand and for each step of the multiplication, a bit of the $x$ operand is fed to the
+pipeline (together with the generated $q$ signal), starting with the Least Significant Bit. The systolic array cells
+need the modulus $m$, the operand $y$ and the sum $m+y$ as an input. The result from the cells is latched into a
+register, and then passed back to the systolic cells for the next bit of $x$. During this pass the right shift operation
+is implemented. Each stage thus needs the least significant bit from the next stage to calculate the next step. Final
+reduction logic is also present in the stages for when the multiplication is complete.
 
-An example of the standard pipeline structure is presented in Figure~\ref{pipeline_structure}. It is constructed using stages with a predefined width. The first cell logic processes the first bit of the $m$ and $y$ operand and generates the $q$ signal. The last cell logic finishes the reduction and selects the correct result. For operation of this pipeline, it is clear that each stage can only compute a step every 2 clock cycles. This is because the stages rely on the result of the next stage.
+An example of the standard pipeline structure is presented in Figure~\ref{pipeline_structure}. It is constructed using
+stages with a predefined width. The first cell logic processes the first bit of the $m$ and $y$ operand and generates
+the $q$ signal. The last cell logic finishes the reduction and selects the correct result. For operation of this
+pipeline, it is clear that each stage can only compute a step every 2 clock cycles. This is because the stages rely on
+the result of the next stage.
 
 In Figure~\ref{pipeline_structure_split} an example pipeline design is drawn for a split pipeline. All multiplexers on
 this figure are controlled by the pipeline select signal (\verb|p_sel|). During runtime the user can choose which part
@@ -90,14 +103,33 @@ of the pipeline is used, the lower or higher part or the full pipeline.
 \newpage
 
 
-\subsection{Operand RAM and exponent FIFO}
-In the core's RAM there is space for 4 operands and 1 modulus. Currently this is instantiated using Xilinx BRAM
-primitives, so there is a fixed RAM of 4x1536 bit for the operands + 1536 bit for the modulus available. If using a split
-pipeline, it is important that operands for the higher part of the pipeline are loaded into the RAM with preceding
-zero's for the lower bits of the pipeline. To store the exponents there is a FIFO of 32 bit wide and 512 deep (also a
-Xilinx primitive, FIFO18E1), so it is able to store 2 exponents of each 8192 bit long. Every 32 bit entry has to be
-pushed in as 16 bit of $e_0$ for the lower part [15:0] and 16 bit of $e_1$ for the higher part [31:16]. Starting
-with the least significant word and ending with the most significant word of the exponents.
+\subsection{Operand RAM and exponent FIFO} \label{subsec:RAM_and_FIFO}
+The core's RAM is designed to store 4 operands and a modulus. \footnote{This is the default configuration. The number of operands can be increased, but the control logic is only designed to work with the default configuration.} Three (3) options are available for the implementation of the RAM. Setting the parameter \verb|C_MEM_STYLE|, will change the implementation style. All styles try to use the RAM resources available on the FPGA.
+
+If the FPGA supports asymmetric RAMs, i.e. with a different read and write width, we suggest that the option \verb|"asym"| is selected. Since the (device specific) RAM blocks are inferred through code, it is imperative to select the right device (\verb|C_DEVICE|), as this inference is different between manufacturers. Currently, only Altera and Xilinx are supported.
+
+If there's no asymmetric RAM support, the option \verb|"generic"| should be selected. This option will work for most FPGAs, but the disadvantage is that it will use more resources than the \verb|"asym"| option. This is because a significant number of LUTs will be used to construct an asymmetric RAM.
+
+For both options the size of the RAM adapts dynamically to the chosen pipeline width (\verb|C_NR_BITS_TOTAL|).
+
+Finally, the option \verb|"xil_prim"| is targeted specifically to Xilinx devices. It uses blocks of RAM generated with CoreGen. These blocks are of a fixed width and this results in a fixed RAM of 4x1536 bit for the operands and 1536 bit for the modulus. This option is deprecated in favor of \verb|"asym"|.
+
+Reading and writing (from the bus side) to the operands and modulus is done one 32-bit word at a time. If using a split pipeline, it is important that operands for the higher part of the pipeline are loaded into the RAM with preceding zero's for the lower bits of the pipeline. As a rule of thumb, the number of FPGA RAM blocks that will be used is given by (\ref{eq:ramblocks}):
+\begin{align}
+	2 \cdot \mathtt{C\_NR\_BITS\_TOTAL} / 32\label{eq:ramblocks}
+\end{align}
+\newline
+
+To store the exponents, there is a FIFO of 32 bit wide. Every 32 bit entry has to be formatted as 16 bit of $e_0$ for the
+lower part [15:0] and 16 bit of $e_1$ for the higher part [31:16]. Entries have to be pushed in the FIFO starting with the least significant word and ending with the most significant word of the exponents.
+
+For the FIFO there are 2 styles available. The implementation style depends on the style of the operand memory and it can not be set directly. When  the RAM option \verb|"xil_prim"| is chosen, the resulting FIFO will use the FIFO18E1 primitive. It is able to store 512 entries, meaning 2 exponents of each 8192 bit long.
+
+When the RAM options \verb|"generic"| or \verb|"asym"| are chosen, a generic FIFO will be implemented. This consist of a symmetric RAM with the control logic for a FIFO. The depth of this generic FIFO is adjustable with the parameter \verb|C_FIFO_DEPTH|.
+The number of RAM blocks for the FIFO is given by (\ref{eq:fifoblocks}), where \verb|RAMBLOCK_SIZE| is the size [bits] of the FPGA's RAM primitive.
+\begin{align}
+	\left[\left(\mathtt{C\_FIFO\_DEPTH}+1\right) \cdot 32 \right]/ \mathtt{RAMBLOCK\_SIZE} \label{eq:fifoblocks}
+\end{align}
 
 \subsection{Control unit}
 The control unit loads in the operands and has full control over the multiplier. For single multiplications, it latches in 
@@ -154,6 +186,8 @@ The \verb|mod_sim_exp_core| IO ports\\
       &       &       & ``10'' : use higher pipeline part \\
       &       &       & ``11'' : use full pipeline \bigstrut[b]\\
 \hline
+\verb|modulus_sel| & 1     & in    & selection for which modulus to use for the calculations (only available if \verb|C_MEM_STYLE| = \verb|"generic"| or \verb|"asym"|). Otherwise set to 0 \bigstrut\\
+\hline
 \verb|exp_m| & 1     & in    & core operation mode. ``0'' for single multiplications and ``1'' for exponentiations \bigstrut\\
 \hline
 \verb|start| & 1     & in    & start the calculation for current mode \bigstrut\\
@@ -164,13 +198,44 @@ The \verb|mod_sim_exp_core| IO ports\\
 \hline
 \end{tabular}%
 \newpage
+The \verb|mod_sim_exp_core| parameters\\
+\begin{center}
+	\begin{tabular}{|l|p{6.5cm}|c|l|}
+		\hline
+		\rowcolor{Gray}
+		\textbf{Name} & \textbf{Description} & \textbf{VHDL Type} &\textbf{Default Value} \bigstrut\\
+		\hline
+		\verb|C_NR_BITS_TOTAL| & total width of the multiplier in bits & integer & 1536\bigstrut\\
+		\hline
+		\verb|C_NR_STAGES_TOTAL| & total number of stages in the pipeline & integer & 96\bigstrut\\
+		\hline
+		\verb|C_NR_STAGES_LOW| & number of lower stages in the pipeline, defines the bit-width of the lower pipeline part & integer & 32 \bigstrut\\
+		\hline
+		\verb|C_SPLIT_PIPELINE| & option to split the pipeline in 2 parts & boolean & true \bigstrut\\
+		\hline
+		\verb|C_FIFO_DEPTH| & depth of the generic FIFO, only applicable if \verb|C_MEM_STYLE| = \verb|"generic"| or \verb|"asym"|  & integer & 32 \bigstrut\\
+		\hline
+		\verb|C_MEM_STYLE| & select the RAM memory style (3 options): & string & \verb|"generic"| \bigstrut\\
+							& \verb|"generic"| : use general 32-bit RAMs & & \\
+      						& \verb|"asym"| : use asymmetric RAMs & & \\
+      						& (For more information see \ref{subsec:RAM_and_FIFO}) & & \\
+      						& \verb|"xil_prim"| : use xilinx primitives & &\\
+      						& (deprecated) & & \bigstrut[b] \\
+		\hline
+		\verb|C_DEVICE| & device manufacturer: & & \\
+						& \verb|"xilinx"| or \verb|"altera"| & string & \verb|"xilinx"| \bigstrut\\
+		\hline
+	\end{tabular}%
+\end{center}
+
 The following figure describes the structure of the Operand RAM memory, for every operand there is a space of 2048 bits 
-reserved.\\
+reserved. So operand widths up to 2048 bits are supported.\\
+\newline \\
 \begin{figure}[H]
 \centering
 \includegraphics[trim=1.2cm 1.2cm 1.2cm 1.2cm, width=15cm]{pictures/msec_memory.pdf}
-\caption{RAM structure of the exponentiation core}
-\label{RAM_structure}
+\caption{Address structure of the exponentiation core}
+\label{Address_structure}
 \end{figure}
 
 \section{Bus interface}
