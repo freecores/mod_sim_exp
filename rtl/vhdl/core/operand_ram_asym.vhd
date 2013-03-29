@@ -53,6 +53,7 @@ use ieee.std_logic_arith.all;
 use ieee.std_logic_unsigned.all;
 
 library mod_sim_exp;
+use mod_sim_exp.mod_sim_exp_pkg.all;
 use mod_sim_exp.std_functions.all;
 
 -- structural description of a RAM to hold the operands, with 
@@ -118,7 +119,7 @@ begin
     signal addrA_single : std_logic_vector(log2(width*depth/32)-1 downto 0);
   begin
     addrA_single <= operand_in_sel & operand_addr;
-    ramblock : entity mod_sim_exp.tdpramblock_asym
+    ramblock : tdpramblock_asym
     generic map(
       depth  => depth,
       width  => width,
@@ -151,7 +152,7 @@ begin
       addrA <= operand_in_sel & operand_addr(log2(RAMblock_maxwidth/32)-1 downto 0);
       
       full_ones : if (i < nrRAMblocks_full) generate
-        ramblock_full : entity mod_sim_exp.tdpramblock_asym
+        ramblock_full : tdpramblock_asym
         generic map(
           depth  => depth,
           width  => RAMblock_maxwidth,
@@ -200,7 +201,7 @@ begin
         signal weA_part   : std_logic;
       begin
         addrA_part <= operand_in_sel & operand_addr(log2(RAMblock_part_width/32)-1 downto 0);
-        ramblock_part : entity mod_sim_exp.tdpramblock_asym
+        ramblock_part : tdpramblock_asym
         generic map(
           depth  => depth,
           width  => RAMblock_part_width,

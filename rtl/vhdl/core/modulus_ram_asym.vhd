@@ -54,6 +54,7 @@ use ieee.std_logic_unsigned.all;
 
 library mod_sim_exp;
 use mod_sim_exp.std_functions.all;
+use mod_sim_exp.mod_sim_exp_pkg.all;
 
 -- structural description of a RAM to hold the modulus, with 
 -- adjustable width (64, 128, 256, 512, 576, 640,..) and depth(nr of moduluses)
@@ -127,7 +128,7 @@ begin
       waddr <= modulus_in_sel & modulus_addr(log2(RAMblock_maxwidth/32)-1 downto 0);
       
       full_ones : if (i < nrRAMblocks_full) generate
-        ramblock_full : entity mod_sim_exp.dpramblock_asym
+        ramblock_full : dpramblock_asym
         generic map(
           width  => RAMblock_maxwidth,
           depth  => depth,
