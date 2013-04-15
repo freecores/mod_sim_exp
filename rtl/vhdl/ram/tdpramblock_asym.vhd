@@ -50,6 +50,7 @@ use ieee.std_logic_arith.all;
 
 library mod_sim_exp;
 use mod_sim_exp.std_functions.all;
+use mod_sim_exp.mod_sim_exp_pkg.all;
 
 -- altera infers ramblocks from a depth of 9 (or 2 with any ram size recognition option on)
 --    and width 64,128,256,512
@@ -87,7 +88,7 @@ architecture structural of tdpramblock_asym is
  begin
 
   ramblocks : for i in 0 to nrRAMs-1 generate
-    ramblock : entity mod_sim_exp.tdpram_asym
+    ramblock : tdpram_asym
     generic map(
       widthA => RAMwidthA,
       depthB => depth,

@@ -100,7 +100,7 @@ begin
   begin
     waddr <= modulus_in_sel & modulus_addr;
   
-    ramblock: entity mod_sim_exp.dpramblock_asym
+    ramblock: dpramblock_asym
     generic map(
       width => width,
       depth => depth,
@@ -162,7 +162,7 @@ begin
       begin
         -- write port signal
         waddr_part <= modulus_in_sel & modulus_addr(log2(RAMblock_part_width/32)-1 downto 0);
-        ramblock_part : entity mod_sim_exp.dpramblock_asym
+        ramblock_part : dpramblock_asym
         generic map(
           width  => RAMblock_part_width,
           depth  => depth,

@@ -50,6 +50,7 @@ use ieee.std_logic_arith.all;
 
 library mod_sim_exp;
 use mod_sim_exp.std_functions.all;
+use mod_sim_exp.mod_sim_exp_pkg.all;
 
 -- altera infers ramblocks from a depth of 9 (or 2 with any ram size recognition option on) 
 --		and width 64,128,256,512,1024
@@ -84,7 +85,7 @@ begin
   -- generate (width/32) blocks of 32-bit ram with a given depth
   -- these rams outputs are concatenated to a width-bit signal
   ramblocks : for i in 0 to nrRAMs-1 generate
-    ramblock: entity mod_sim_exp.dpram_asym
+    ramblock: dpram_asym
     generic map(
       rddepth => depth,
       wrwidth => RAMwrwidth,
