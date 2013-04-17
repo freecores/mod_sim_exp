@@ -1,61 +1,57 @@
-------------------------------------------------------------------------------
--- axi_lite_test.vhd - entity/architecture pair
-------------------------------------------------------------------------------
--- IMPORTANT:
--- DO NOT MODIFY THIS FILE EXCEPT IN THE DESIGNATED SECTIONS.
---
--- SEARCH FOR --USER TO DETERMINE WHERE CHANGES ARE ALLOWED.
---
--- TYPICALLY, THE ONLY ACCEPTABLE CHANGES INVOLVE ADDING NEW
--- PORTS AND GENERICS THAT GET PASSED THROUGH TO THE INSTANTIATION
--- OF THE USER_LOGIC ENTITY.
-------------------------------------------------------------------------------
---
--- ***************************************************************************
--- ** Copyright (c) 1995-2012 Xilinx, Inc.  All rights reserved.            **
--- **                                                                       **
--- ** Xilinx, Inc.                                                          **
--- ** XILINX IS PROVIDING THIS DESIGN, CODE, OR INFORMATION "AS IS"         **
--- ** AS A COURTESY TO YOU, SOLELY FOR USE IN DEVELOPING PROGRAMS AND       **
--- ** SOLUTIONS FOR XILINX DEVICES.  BY PROVIDING THIS DESIGN, CODE,        **
--- ** OR INFORMATION AS ONE POSSIBLE IMPLEMENTATION OF THIS FEATURE,        **
--- ** APPLICATION OR STANDARD, XILINX IS MAKING NO REPRESENTATION           **
--- ** THAT THIS IMPLEMENTATION IS FREE FROM ANY CLAIMS OF INFRINGEMENT,     **
--- ** AND YOU ARE RESPONSIBLE FOR OBTAINING ANY RIGHTS YOU MAY REQUIRE      **
--- ** FOR YOUR IMPLEMENTATION.  XILINX EXPRESSLY DISCLAIMS ANY              **
--- ** WARRANTY WHATSOEVER WITH RESPECT TO THE ADEQUACY OF THE               **
--- ** IMPLEMENTATION, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OR        **
--- ** REPRESENTATIONS THAT THIS IMPLEMENTATION IS FREE FROM CLAIMS OF       **
--- ** INFRINGEMENT, IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS       **
--- ** FOR A PARTICULAR PURPOSE.                                             **
--- **                                                                       **
--- ***************************************************************************
---
-------------------------------------------------------------------------------
--- Filename:          axi_lite_test.vhd
--- Version:           1.00.a
--- Description:       Top level design, instantiates library components and user logic.
--- Date:              Mon Mar 11 15:48:39 2013 (by Create and Import Peripheral Wizard)
--- VHDL Standard:     VHDL'93
-------------------------------------------------------------------------------
--- Naming Conventions:
---   active low signals:                    "*_n"
---   clock signals:                         "clk", "clk_div#", "clk_#x"
---   reset signals:                         "rst", "rst_n"
---   generics:                              "C_*"
---   user defined types:                    "*_TYPE"
---   state machine next state:              "*_ns"
---   state machine current state:           "*_cs"
---   combinatorial signals:                 "*_com"
---   pipelined or register delay signals:   "*_d#"
---   counter signals:                       "*cnt*"
---   clock enable signals:                  "*_ce"
---   internal version of output port:       "*_i"
---   device pins:                           "*_pin"
---   ports:                                 "- Names begin with Uppercase"
---   processes:                             "*_PROCESS"
---   component instantiations:              "<ENTITY_>I_<#|FUNC>"
-------------------------------------------------------------------------------
+----------------------------------------------------------------------  
+----  msec_ipcore_axilite                                         ---- 
+----                                                              ---- 
+----  This file is part of the                                    ----
+----    Modular Simultaneous Exponentiation Core project          ---- 
+----    http://www.opencores.org/cores/mod_sim_exp/               ---- 
+----                                                              ---- 
+----  Description                                                 ---- 
+----    AXI-Lite bus interface for the mod_sim_exp_core. Has a    ----
+----    fixed address decoder, address offsets are:               ----
+----                                                              ----
+----      M       : 0xXXXX0000                                    ----
+----      OP0     : 0xXXXX1000                                    ----
+----      OP1     : 0xXXXX2000                                    ----
+----      OP2     : 0xXXXX3000                                    ----
+----      OP3     : 0xXXXX4000                                    ----
+----      FIFO    : 0xXXXX5000                                    ----
+----      Control : 0xXXXX6000                                    ----
+----                                                              ----
+----    only the XXXX part of the address can be chosen freely    ----
+----                                                              ----
+----  Dependencies:                                               ----
+----    - mod_sim_exp_core                                        ----
+----                                                              ----
+----  Authors:                                                    ----
+----      - Geoffrey Ottoy, DraMCo research group                 ----
+----      - Jonas De Craene, JonasDC@opencores.org                ---- 
+----                                                              ---- 
+---------------------------------------------------------------------- 
+----                                                              ---- 
+---- Copyright (C) 2011 DraMCo research group and OPENCORES.ORG   ---- 
+----                                                              ---- 
+---- This source file may be used and distributed without         ---- 
+---- restriction provided that this copyright statement is not    ---- 
+---- removed from the file and that any derivative work contains  ---- 
+---- the original copyright notice and the associated disclaimer. ---- 
+----                                                              ---- 
+---- This source file is free software; you can redistribute it   ---- 
+---- and/or modify it under the terms of the GNU Lesser General   ---- 
+---- Public License as published by the Free Software Foundation; ---- 
+---- either version 2.1 of the License, or (at your option) any   ---- 
+---- later version.                                               ---- 
+----                                                              ---- 
+---- This source is distributed in the hope that it will be       ---- 
+---- useful, but WITHOUT ANY WARRANTY; without even the implied   ---- 
+---- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR      ---- 
+---- PURPOSE.  See the GNU Lesser General Public License for more ---- 
+---- details.                                                     ---- 
+----                                                              ---- 
+---- You should have received a copy of the GNU Lesser General    ---- 
+---- Public License along with this source; if not, download it   ---- 
+---- from http://www.opencores.org/lgpl.shtml                     ---- 
+----                                                              ---- 
+----------------------------------------------------------------------
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -71,16 +67,8 @@ use mod_sim_exp.mod_sim_exp_pkg;
 -- Definition of Generics:
 --   C_S_AXI_DATA_WIDTH           -- AXI4LITE slave: Data width
 --   C_S_AXI_ADDR_WIDTH           -- AXI4LITE slave: Address Width
---   C_S_AXI_MIN_SIZE             -- AXI4LITE slave: Min Size
---   C_USE_WSTRB                  -- AXI4LITE slave: Write Strobe
---   C_DPHASE_TIMEOUT             -- AXI4LITE slave: Data Phase Timeout
 --   C_BASEADDR                   -- AXI4LITE slave: base address
 --   C_HIGHADDR                   -- AXI4LITE slave: high address
---   C_FAMILY                     -- FPGA Family
---   C_NUM_REG                    -- Number of software accessible registers
---   C_NUM_MEM                    -- Number of address-ranges
---   C_SLV_AWIDTH                 -- Slave interface address bus width
---   C_SLV_DWIDTH                 -- Slave interface data bus width
 --
 -- Definition of Ports:
 --   S_AXI_ACLK                   -- AXI4LITE slave: Clock 
@@ -104,32 +92,23 @@ use mod_sim_exp.mod_sim_exp_pkg;
 --   S_AXI_AWREADY                -- AXI4LITE slave: Wrte address ready
 ------------------------------------------------------------------------------
 
-entity axi_lite_slave is
-  generic
-  (
-    -- ADD USER GENERICS BELOW THIS LINE ---------------
-    --USER generics added here
-        -- Multiplier parameters
+entity msec_ipcore_axilite is
+  generic(
+    -- Multiplier parameters
     C_NR_BITS_TOTAL   : integer := 1536;
     C_NR_STAGES_TOTAL : integer := 96;
     C_NR_STAGES_LOW   : integer := 32;
     C_SPLIT_PIPELINE  : boolean := true;
     C_FIFO_DEPTH      : integer := 32;
-    C_MEM_STYLE       : string  := "asym"; -- xil_prim, generic, asym are valid options
-    C_DEVICE          : string  := "xilinx";    -- xilinx, altera are valid options
-    
-    -- ADD USER GENERICS ABOVE THIS LINE ---------------
-
-    -- DO NOT EDIT BELOW THIS LINE ---------------------
-    -- Bus protocol parameters, do not add to or delete
+    C_MEM_STYLE       : string  := "xil_prim"; -- xil_prim, generic, asym are valid options
+    C_FPGA_MAN        : string  := "xilinx";    -- xilinx, altera are valid options
+    -- Bus protocol parameters
     C_S_AXI_DATA_WIDTH             : integer              := 32;
     C_S_AXI_ADDR_WIDTH             : integer              := 32;
     C_BASEADDR                     : std_logic_vector     := X"FFFFFFFF";
     C_HIGHADDR                     : std_logic_vector     := X"00000000"
-    -- DO NOT EDIT ABOVE THIS LINE ---------------------
   );
-  port
-  (
+  port(
     --USER ports
     calc_time                     : out std_logic;
     IntrEvent                     : out std_logic;
@@ -169,24 +148,23 @@ entity axi_lite_slave is
   attribute MAX_FANOUT of S_AXI_ARESETN : signal is "10000";
   attribute SIGIS of S_AXI_ACLK         : signal is "Clk";
   attribute SIGIS of S_AXI_ARESETN      : signal is "Rst";
-end entity axi_lite_slave;
+end entity msec_ipcore_axilite;
 
 ------------------------------------------------------------------------------
 -- Architecture section
 ------------------------------------------------------------------------------
 
-architecture IMP of axi_lite_slave is
+architecture IMP of msec_ipcore_axilite is
   type axi_states is (addr_wait, read_state, write_state, response_state);
   signal state : axi_states;
   
   signal address : std_logic_vector(C_S_AXI_ADDR_WIDTH-1 downto 0);
   signal reset : std_logic;
   
-  
+  signal S_AXI_BVALID_i : std_logic;
   
   -- selection signals
   signal cs_array           : std_logic_vector(6 downto 0);
-  signal core_selected      : std_logic;
   signal slv_reg_selected : std_logic;
   signal op_mem_selected    : std_logic;
   signal op_sel             : std_logic_vector(1 downto 0);
@@ -236,7 +214,7 @@ begin
     if rising_edge(S_AXI_ACLK) then
       if S_AXI_ARESETN='0' then -- slave reset state
         S_AXI_RVALID <= '0';
-        S_AXI_BVALID <= '0';
+        S_AXI_BVALID_i <= '0';
         S_AXI_ARREADY <= '0';
         S_AXI_WREADY <= '0';
         S_AXI_AWREADY <= '0';
@@ -251,10 +229,9 @@ begin
               state <= read_state;
               address <= S_AXI_ARADDR;
               S_AXI_ARREADY <= '1';
-            elsif S_AXI_AWVALID = '1' then -- write
+            elsif (S_AXI_AWVALID = '1' and S_AXI_WVALID = '1') then -- write
               state <= write_state;
               address <= S_AXI_AWADDR;
-              S_AXI_AWREADY <= '1';
             else
               state <= addr_wait;
             end if;
@@ -267,23 +244,20 @@ begin
             
           when write_state =>
           -- generate a write pulse
-            S_AXI_AWREADY <= '0';
-            if (S_AXI_WVALID = '1') then
-              write_enable <= '1';
-              S_AXI_WREADY <= '1';
-              S_AXI_BVALID <= '1';
-              state <= response_state;
-            else 
-              state <= write_state;
-            end if;
+            S_AXI_AWREADY <= '1';
+            write_enable <= '1';
+            S_AXI_WREADY <= '1';
+            state <= response_state;
             
           when response_state =>
             write_enable <= '0';
+            S_AXI_AWREADY <= '0';
             S_AXI_WREADY <= '0';
+            S_AXI_BVALID_i <= '1';
           -- wait for response from master
-            if (S_AXI_RREADY = '1') or (S_AXI_BREADY = '1') then
+            if (S_AXI_RREADY = '1') or (S_AXI_BVALID_i = '1' and S_AXI_BREADY = '1') then
               S_AXI_RVALID <= '0';
-              S_AXI_BVALID <= '0';
+              S_AXI_BVALID_i <= '0';
               state <= addr_wait;
             else
               state <= response_state;
@@ -293,22 +267,22 @@ begin
       end if;
     end if;
   end process;
-  
-  -- place correct data on the bus
-  S_AXI_RDATA <=  core_data_out when (core_selected='1') and (op_mem_selected='1') else
-                  slv_reg       when (core_selected='1') and (slv_reg_selected='1') else
-                  (others=>'0');
+  S_AXI_BVALID <= S_AXI_BVALID_i;  
+
+  -- place correct data on the read bus
+  S_AXI_RDATA <=  slv_reg when (slv_reg_selected='1') else
+                  core_data_out;
   
   -- SLAVE REG MAPPING
   -- core control signals
-  reset <= not S_AXI_ARESETN;
-  core_p_sel <= slv_reg(1 downto 0);
-  core_dest_op_single <= slv_reg(3 downto 2);
-  core_x_sel_single <= slv_reg(5 downto 4);
-  core_y_sel_single <= slv_reg(7 downto 6);
-  core_start <= slv_reg(8);
-  core_exp_m <= slv_reg(9);
-  core_modulus_sel <= slv_reg(10);
+  core_p_sel <= slv_reg(31 downto 30);
+  core_dest_op_single <= slv_reg(29 downto 28);
+  core_x_sel_single <= slv_reg(27 downto 26);
+  core_y_sel_single <= slv_reg(25 downto 24);
+  core_start <= slv_reg(23);
+  core_exp_m <= slv_reg(22);
+  core_modulus_sel <= slv_reg(21);
+  reset <= (not S_AXI_ARESETN) or slv_reg(20);
   
   -- implement slave register
   SLAVE_REG_WRITE_PROC : process( S_AXI_ACLK ) is
@@ -317,7 +291,7 @@ begin
       if S_AXI_ARESETN = '0' then
         slv_reg <= (others => '0');
       elsif load_flags = '1' then
-        slv_reg <= core_flags & slv_reg(15 downto 0) ;
+        slv_reg <= slv_reg(31 downto 16) & core_flags;
       else
         if (slv_reg_write_enable='1') then
           slv_reg <= S_AXI_WDATA(31 downto 0);
@@ -328,6 +302,7 @@ begin
   
   -- interrupt and flags
   core_interrupt <= core_ready or core_mem_collision or core_fifo_full or core_fifo_nopush;
+  IntrEvent <= core_interrupt;
   
   FLAGS_CNTRL_PROC : process(S_AXI_ACLK, S_AXI_ARESETN) is
   begin
@@ -363,12 +338,6 @@ begin
     end if;
   end process FLAGS_CNTRL_PROC;
   
-  IntrEvent <= core_interrupt;
-  
-  -- high if general core address space is selected
-  core_selected <=  '1' when address(31 downto 16)=C_BASEADDR(0 to 15) else 
-                    '0';
-  
   -- adress decoder
   with address(14 downto 12) select
     cs_array <= "0000001" when "000", -- M
@@ -379,7 +348,7 @@ begin
                 "0100000" when "101", -- FIFO
                 "1000000" when "110", -- user reg space
                 "0000000" when others;
-                
+  
   slv_reg_selected <= cs_array(6);
   slv_reg_write_enable <= write_enable and slv_reg_selected;
   
@@ -415,7 +384,7 @@ begin
     C_SPLIT_PIPELINE  => C_SPLIT_PIPELINE,
     C_FIFO_DEPTH      => C_FIFO_DEPTH,
     C_MEM_STYLE       => C_MEM_STYLE,
-    C_DEVICE          => C_DEVICE
+    C_FPGA_MAN        => C_FPGA_MAN
   )
   port map(
     clk   => S_AXI_ACLK,

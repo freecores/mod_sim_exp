@@ -77,8 +77,8 @@ architecture test of mod_sim_exp_core_tb is
   constant C_NR_STAGES_LOW   : integer := 32;
   constant C_SPLIT_PIPELINE  : boolean := true; 
   constant C_FIFO_DEPTH      : integer := 32; -- set to (maximum exponent width)/16
-  constant C_MEM_STYLE       : string  := "generic"; -- xil_prim, generic, asym are valid options
-  constant C_DEVICE          : string  := "xilinx";  -- xilinx, altera are valid options
+  constant C_MEM_STYLE       : string  := "asym"; -- xil_prim, generic, asym are valid options
+  constant C_FPGA_MAN        : string  := "xilinx";  -- xilinx, altera are valid options
   
   -- extra calculated constants
   constant NR_BITS_LOW : integer := (C_NR_BITS_TOTAL/C_NR_STAGES_TOTAL)*C_NR_STAGES_LOW;
@@ -679,7 +679,7 @@ generic map(
   C_SPLIT_PIPELINE  => C_SPLIT_PIPELINE,
   C_FIFO_DEPTH      => C_FIFO_DEPTH,
   C_MEM_STYLE       => C_MEM_STYLE, -- xil_prim, generic, asym are valid options
-  C_DEVICE          => C_DEVICE   -- xilinx, altera are valid options
+  C_FPGA_MAN        => C_FPGA_MAN   -- xilinx, altera are valid options
 )
 port map(
   clk   => clk,
@@ -704,7 +704,7 @@ port map(
   dest_op_single => core_dest_op_single,
   p_sel          => core_p_sel,
   calc_time      => calc_time,
-  modulus_sel    => "0"
+  modulus_sel    => '0'
 );
 
 end test;

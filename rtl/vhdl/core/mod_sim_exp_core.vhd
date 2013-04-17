@@ -67,7 +67,7 @@ entity mod_sim_exp_core is
     C_SPLIT_PIPELINE  : boolean := true;
     C_FIFO_DEPTH      : integer := 32;
     C_MEM_STYLE       : string  := "asym"; -- xil_prim, generic, asym are valid options
-    C_DEVICE          : string  := "xilinx"   -- xilinx, altera are valid options
+    C_FPGA_MAN        : string  := "xilinx"   -- xilinx, altera are valid options
   );
   port(
     clk   : in  std_logic;
@@ -122,7 +122,12 @@ architecture Structural of mod_sim_exp_core is
   signal fifo_nopop : std_logic;
   signal fifo_dout  : std_logic_vector(31 downto 0);
 begin
-
+  -- check the parameters
+  assert (C_MEM_STYLE="xil_prim" or C_MEM_STYLE="generic" or C_MEM_STYLE="asym") 
+    report "C_MEM_STYLE incorrect!, it must be one of these: xil_prim, generic or asym" severity failure;
+  assert (C_FPGA_MAN="xilinx" or C_FPGA_MAN="altera") 
+    report "C_FPGA_MAN incorrect!, it must be one of these: xilinx or altera" severity failure;
+  
   -- The actual multiplier
   the_multiplier : mont_multiplier
   generic map(
@@ -150,7 +155,7 @@ begin
     nr_op     => nr_op,
     nr_m      => nr_m,
     mem_style => C_MEM_STYLE,
-    device    => C_DEVICE
+    device    => C_FPGA_MAN
   )
   port map(
     data_in        => data_in,

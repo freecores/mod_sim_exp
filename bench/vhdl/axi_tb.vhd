@@ -1,10 +1,48 @@
---------------------------------------------------------------------------------
--- Entity: axi_tb
--- Date:2013-03-26  
--- Author: Dinghe     
---
--- Description ${cursor}
---------------------------------------------------------------------------------
+----------------------------------------------------------------------  
+----  axi_tb                                                      ---- 
+----                                                              ---- 
+----  This file is part of the                                    ----
+----    Modular Simultaneous Exponentiation Core project          ---- 
+----    http://www.opencores.org/cores/mod_sim_exp/               ---- 
+----                                                              ---- 
+----  Description                                                 ---- 
+----    testbench for the AXI-Lite interface, functions are       ----
+----    provided to read and write data                           ----
+----    writes bus transfers to out/axi_output                    ----
+----                                                              ----
+----  Dependencies:                                               ----
+----    - mod_sim_exp_core                                        ----
+----                                                              ----
+----  Authors:                                                    ----
+----      - Geoffrey Ottoy, DraMCo research group                 ----
+----      - Jonas De Craene, JonasDC@opencores.org                ---- 
+----                                                              ---- 
+---------------------------------------------------------------------- 
+----                                                              ---- 
+---- Copyright (C) 2011 DraMCo research group and OPENCORES.ORG   ---- 
+----                                                              ---- 
+---- This source file may be used and distributed without         ---- 
+---- restriction provided that this copyright statement is not    ---- 
+---- removed from the file and that any derivative work contains  ---- 
+---- the original copyright notice and the associated disclaimer. ---- 
+----                                                              ---- 
+---- This source file is free software; you can redistribute it   ---- 
+---- and/or modify it under the terms of the GNU Lesser General   ---- 
+---- Public License as published by the Free Software Foundation; ---- 
+---- either version 2.1 of the License, or (at your option) any   ---- 
+---- later version.                                               ---- 
+----                                                              ---- 
+---- This source is distributed in the hope that it will be       ---- 
+---- useful, but WITHOUT ANY WARRANTY; without even the implied   ---- 
+---- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR      ---- 
+---- PURPOSE.  See the GNU Lesser General Public License for more ---- 
+---- details.                                                     ---- 
+----                                                              ---- 
+---- You should have received a copy of the GNU Lesser General    ---- 
+---- Public License along with this source; if not, download it   ---- 
+---- from http://www.opencores.org/lgpl.shtml                     ---- 
+----                                                              ---- 
+----------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
@@ -25,7 +63,20 @@ architecture arch of axi_tb is
   constant C_S_AXI_ADDR_WIDTH : integer := 32;
   
   file output : text open write_mode is "out/axi_output.txt";
-
+  
+  ------------------------------------------------------------------
+  -- Core parameters
+  ------------------------------------------------------------------
+  constant C_NR_BITS_TOTAL   : integer := 1536;
+  constant C_NR_STAGES_TOTAL : integer := 96;
+  constant C_NR_STAGES_LOW   : integer := 32;
+  constant C_SPLIT_PIPELINE  : boolean := true; 
+  constant C_FIFO_DEPTH      : integer := 32; -- set to (maximum exponent width)/16
+  constant C_MEM_STYLE       : string  := "generic"; -- xil_prim, generic, asym are valid options
+  constant C_FPGA_MAN        : string  := "xilinx";  -- xilinx, altera are valid options
+  constant C_BASEADDR        : std_logic_vector(0 to 31) := x"A0000000";
+  constant C_HIGHADDR        : std_logic_vector(0 to 31) := x"A0007FFF";
+  
   -------------------------
   -- AXI4lite interface
   -------------------------
@@ -191,6 +242,14 @@ begin
     axi_read(x"A0005000");
     axi_write(x"A0006000", x"EEEEEEEE");
     axi_read(x"A0006000");
+    axi_write(x"A0007000", x"FFFFFFFF");
+    axi_read(x"A0007000");
+    axi_write(x"A0008000", x"22222222");
+    axi_read(x"A0008000");
+    axi_write(x"A0009000", x"33333333");
+    axi_read(x"A0009000");
+    axi_write(x"A000A000", x"44444444");
+    axi_read(x"A000A000");
     waitclk(100);
     
     assert false report "End of simulation" severity failure;
@@ -201,10 +260,17 @@ begin
   -------------------------
   -- Unit Under Test
   -------------------------
-  uut : entity work.axi_lite_slave
+  uut : entity work.msec_ipcore_axilite
   generic map(
-    C_BASEADDR => x"A0000000",
-    C_HIGHADDR => x"A000FFFF"
+    C_NR_BITS_TOTAL   => C_NR_BITS_TOTAL,
+    C_NR_STAGES_TOTAL => C_NR_STAGES_TOTAL,
+    C_NR_STAGES_LOW   => C_NR_STAGES_LOW,
+    C_SPLIT_PIPELINE  => C_SPLIT_PIPELINE,
+    C_FIFO_DEPTH      => C_FIFO_DEPTH,
+    C_MEM_STYLE       => C_MEM_STYLE, -- xil_prim, generic, asym are valid options
+    C_FPGA_MAN        => C_FPGA_MAN,   -- xilinx, altera are valid options
+    C_BASEADDR        => C_BASEADDR,
+    C_HIGHADDR        => C_HIGHADDR
   )
   port map(
     --USER ports

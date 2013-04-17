@@ -164,7 +164,7 @@ entity mod_sim_exp_IPcore is
     C_SPLIT_PIPELINE  : boolean := true;
     C_FIFO_DEPTH      : integer := 32;
     C_MEM_STYLE       : string  := "xil_prim"; -- xil_prim, generic, asym are valid options
-    C_DEVICE          : string  := "xilinx";    -- xilinx, altera are valid options
+    C_FPGA_MAN        : string  := "xilinx";    -- xilinx, altera are valid options
     -- ADD USER GENERICS ABOVE THIS LINE ---------------
 
     -- DO NOT EDIT BELOW THIS LINE ---------------------
@@ -582,7 +582,7 @@ begin
       C_SPLIT_PIPELINE  => C_SPLIT_PIPELINE,
       C_FIFO_DEPTH      => C_FIFO_DEPTH,
       C_MEM_STYLE       => C_MEM_STYLE,
-      C_DEVICE          => C_DEVICE,
+      C_FPGA_MAN        => C_FPGA_MAN,
       -- MAP USER GENERICS ABOVE THIS LINE ---------------
 
       C_SLV_AWIDTH                   => USER_SLV_AWIDTH,

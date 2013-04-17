@@ -932,7 +932,7 @@ package mod_sim_exp_pkg is
       C_SPLIT_PIPELINE  : boolean := true;
       C_FIFO_DEPTH      : integer := 32;
       C_MEM_STYLE       : string  := "generic"; -- xil_prim, generic, asym are valid options
-      C_DEVICE          : string  := "xilinx"   -- xilinx, altera are valid options
+      C_FPGA_MAN        : string  := "xilinx"   -- xilinx, altera are valid options
     );
     port(
       clk   : in  std_logic;
