@@ -106,7 +106,7 @@ of the pipeline is used, the lower or higher part or the full pipeline.
 \subsection{Operand RAM and exponent FIFO} \label{subsec:RAM_and_FIFO}
 The core's RAM is designed to store 4 operands and a modulus. \footnote{This is the default configuration. The number of operands can be increased, but the control logic is only designed to work with the default configuration.} Three (3) options are available for the implementation of the RAM. Setting the parameter \verb|C_MEM_STYLE|, will change the implementation style. All styles try to use the RAM resources available on the FPGA.
 
-If the FPGA supports asymmetric RAMs, i.e. with a different read and write width, we suggest that the option \verb|"asym"| is selected. Since the (device specific) RAM blocks are inferred through code, it is imperative to select the right device (\verb|C_DEVICE|), as this inference is different between manufacturers. Currently, only Altera and Xilinx are supported.
+If the FPGA supports asymmetric RAMs, i.e. with a different read and write width, we suggest that the option \verb|"asym"| is selected. Since the (device specific) RAM blocks are inferred through code, it is imperative to select the right device (\verb|C_FPGA_MAN|), as this inference is different between manufacturers. Currently, only Altera and Xilinx are supported.
 
 If there's no asymmetric RAM support, the option \verb|"generic"| should be selected. This option will work for most FPGAs, but the disadvantage is that it will use more resources than the \verb|"asym"| option. This is because a significant number of LUTs will be used to construct an asymmetric RAM.
 
@@ -222,7 +222,7 @@ The \verb|mod_sim_exp_core| parameters\\
       						& \verb|"xil_prim"| : use xilinx primitives & &\\
       						& (deprecated) & & \bigstrut[b] \\
 		\hline
-		\verb|C_DEVICE| & device manufacturer: & & \\
+		\verb|C_FPGA_MAN| & device manufacturer: & & \\
 						& \verb|"xilinx"| or \verb|"altera"| & string & \verb|"xilinx"| \bigstrut\\
 		\hline
 	\end{tabular}%
