@@ -100,7 +100,7 @@ entity msec_ipcore_axilite is
     C_NR_STAGES_LOW   : integer := 32;
     C_SPLIT_PIPELINE  : boolean := true;
     C_FIFO_DEPTH      : integer := 32;
-    C_MEM_STYLE       : string  := "xil_prim"; -- xil_prim, generic, asym are valid options
+    C_MEM_STYLE       : string  := "asym"; -- xil_prim, generic, asym are valid options
     C_FPGA_MAN        : string  := "xilinx";    -- xilinx, altera are valid options
     -- Bus protocol parameters
     C_S_AXI_DATA_WIDTH             : integer              := 32;
@@ -288,7 +288,7 @@ begin
   SLAVE_REG_WRITE_PROC : process( S_AXI_ACLK ) is
   begin
     if rising_edge(S_AXI_ACLK) then
-      if S_AXI_ARESETN = '0' then
+      if reset = '1' then
         slv_reg <= (others => '0');
       elsif load_flags = '1' then
         slv_reg <= slv_reg(31 downto 16) & core_flags;
@@ -306,7 +306,7 @@ begin
   
   FLAGS_CNTRL_PROC : process(S_AXI_ACLK, S_AXI_ARESETN) is
   begin
-    if S_AXI_ARESETN = '0' then
+    if reset = '1' then
       core_flags <= (others => '0');
       load_flags <= '0';
     elsif rising_edge(S_AXI_ACLK) then
