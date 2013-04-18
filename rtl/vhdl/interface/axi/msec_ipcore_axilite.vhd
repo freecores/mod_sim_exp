@@ -304,7 +304,7 @@ begin
   core_interrupt <= core_ready or core_mem_collision or core_fifo_full or core_fifo_nopush;
   IntrEvent <= core_interrupt;
   
-  FLAGS_CNTRL_PROC : process(S_AXI_ACLK, S_AXI_ARESETN) is
+  FLAGS_CNTRL_PROC : process(S_AXI_ACLK, reset) is
   begin
     if reset = '1' then
       core_flags <= (others => '0');
