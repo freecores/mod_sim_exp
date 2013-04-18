@@ -165,9 +165,11 @@ bit 22 		& EXP/M : selects the operating mode\\
  			& $\bullet$  "0" single Montgomery multiplications\\
  			& $\bullet$  "1" simultaneous exponentiations\\
  			&\\
-bit 21 		& RESET : active high reset for the core\footnotemark[2]\\
+bit 21		& unimplemented\\
+			&\\
+bit 20 		& RESET : active high reset for the core\footnotemark[2]\\
 			&\\		
-bits 20-16	& unimplemented\\
+bits 19-16	& unimplemented\\
 			&\\
 bit 15		& READY : ready flag, "1" when multiplication is done\\
 			& must be cleared in software\\
