@@ -56,41 +56,49 @@ entity dpram_generic is
     depth : integer := 2
   );
   port  (
-    clk : in std_logic;
-    -- write port
-    waddr : in std_logic_vector(log2(depth)-1 downto 0);
-    we    : in std_logic;
-    din   : in std_logic_vector(31 downto 0);
-    -- read port
-    raddr : in std_logic_vector(log2(depth)-1 downto 0);
-    dout  : out std_logic_vector(31 downto 0)
+    -- write port A
+    clkA   : in std_logic;
+    waddrA : in std_logic_vector(log2(depth)-1 downto 0);
+    weA    : in std_logic;
+    dinA   : in std_logic_vector(31 downto 0);
+    -- read port B
+    clkB   : in std_logic;
+    raddrB : in std_logic_vector(log2(depth)-1 downto 0);
+    doutB  : out std_logic_vector(31 downto 0)
   );
 end dpram_generic;
 
 architecture behavorial of dpram_generic is
   -- the memory
   type ram_type is array (depth-1 downto 0) of std_logic_vector (31 downto 0);
-  signal RAM : ram_type := (others => (others => '0'));
+  shared variable RAM : ram_type := (others => (others => '0'));
   
   -- xilinx constraint to use blockram resources
   attribute ram_style : string;
-  attribute ram_style of ram:signal is "block";
+  attribute ram_style of ram:variable is "block";
   -- altera constraints:
   -- for smal depths:
   --  if the synthesis option "allow any size of RAM to be inferred" is on, these lines 
   --  may be left commented.
   --  uncomment this attribute if that option is off and you know wich primitives should be used.
   --attribute ramstyle : string;
-  --attribute ramstyle of RAM : signal is "M9K, no_rw_check";
+  --attribute ramstyle of RAM : variable is "M9K, no_rw_check";
 begin
-  process (clk)
+  process (clkA)
   begin
-    if (clk'event and clk = '1') then
-      if (we = '1') then
-        RAM(conv_integer(waddr)) <= din;
+    if rising_edge(clkA) then
+      if (weA = '1') then
+        RAM(conv_integer(waddrA)) := dinA;
       end if;
-      dout <= RAM(conv_integer(raddr));
     end if;
   end process;
+  
+  process (clkB)
+  begin
+    if rising_edge(clkB) then
+      doutB <= RAM(conv_integer(raddrB));
+    end if;
+  end process;
+  
 end behavorial;
 

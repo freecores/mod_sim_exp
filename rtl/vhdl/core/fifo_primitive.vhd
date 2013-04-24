@@ -54,16 +54,17 @@ use UNISIM.VComponents.all;
 
 entity fifo_primitive is
   port (
-    clk    : in  std_logic;
-    din    : in  std_logic_vector (31 downto 0);
-    dout   : out  std_logic_vector (31 downto 0);
-    empty  : out  std_logic;
-    full   : out  std_logic;
-    push   : in  std_logic;
-    pop    : in  std_logic;
-    reset  : in std_logic;
-    nopop  : out std_logic;
-    nopush : out std_logic
+    push_clk : in  std_logic;
+    pop_clk  : in  std_logic;
+    din      : in  std_logic_vector (31 downto 0);
+    dout     : out  std_logic_vector (31 downto 0);
+    empty    : out  std_logic;
+    full     : out  std_logic;
+    push     : in  std_logic;
+    pop      : in  std_logic;
+    reset    : in std_logic;
+    nopop    : out std_logic;
+    nopush   : out std_logic
   );
 end fifo_primitive;
 
@@ -86,13 +87,13 @@ begin
 	push_i <= push and (not reset_i);
 	
 	-- makes the reset at least three clk_cycles long
-	RESET_PROC: process (reset, clk)
+	RESET_PROC: process (reset, push_clk)
 		variable clk_counter : integer range 0 to 3 := 3;
 	begin
 		if reset = '1' then
 			reset_i <= '1';
 			clk_counter := 3;
-		elsif rising_edge(clk) then
+		elsif rising_edge(push_clk) then
 			if clk_counter = 0 then
 				clk_counter := 0;
 				reset_i <= '0';
@@ -135,8 +136,8 @@ begin
       RST => reset_i,               -- 1-bit reset input
       RSTREG => reset_i,            -- 1-bit output register set/reset
       -- WRCLK, RDCLK: 1-bit (each) Clocks
-      RDCLK => clk,                 -- 1-bit read clock input
-      WRCLK => clk,                 -- 1-bit write clock input
+      RDCLK => pop_clk,                 -- 1-bit read clock input
+      WRCLK => push_clk,                 -- 1-bit write clock input
       WREN => push_i                -- 1-bit write enable input
    );
 

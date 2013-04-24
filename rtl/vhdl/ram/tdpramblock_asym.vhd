@@ -61,14 +61,15 @@ entity tdpramblock_asym is
     width  : integer := 512;  -- width of portB
     device : string  := "xilinx"
   );
-  port  (
-    clk : in std_logic;
+  port (
     -- port A 32-bit
+    clkA  : in std_logic;
     addrA : in std_logic_vector(log2((width*depth)/32)-1 downto 0);
     weA   : in std_logic;
     dinA  : in std_logic_vector(31 downto 0);
     doutA : out std_logic_vector(31 downto 0);
     -- port B (width)-bit
+    clkB  : in std_logic;
     addrB : in std_logic_vector(log2(depth)-1 downto 0);
     weB   : in std_logic;
     dinB  : in std_logic_vector(width-1 downto 0);
@@ -95,13 +96,14 @@ architecture structural of tdpramblock_asym is
       device => device
     )
     port map(
-      clk => clk,
       -- port A (widthA)-bit
+      clkA  => clkA,
       addrA => addrA,
       weA   => weA,
       dinA  => dinA((i+1)*RAMwidthA-1 downto RAMwidthA*i),
       doutA => doutA((i+1)*RAMwidthA-1 downto RAMwidthA*i),
       -- port B 32-bit
+      clkB  => clkB,
       addrB => addrB,
       weB   => weB,
       dinB  => dinB_RAM(i),

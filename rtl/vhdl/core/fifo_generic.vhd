@@ -138,14 +138,15 @@ begin
       depth => depth+1
     )
     port map(
-      clk   => clk,
       -- write port
-      waddr => wr_addr,
-      we    => push_i_d,
-      din   => din,
+      clkA   => clk,
+      waddrA => wr_addr,
+      weA    => push_i_d,
+      dinA   => din,
       -- read port
-      raddr => rd_addr,
-      dout  => dout
+      clkB  => clk,
+      raddrB => rd_addr,
+      doutB  => dout
     );
 
 end arch;
