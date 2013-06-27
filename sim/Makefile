@@ -4,7 +4,7 @@ VCOMOPS = -explicit -check_synthesis -2002 -quiet
 HDL_DIR = ../rtl/vhdl/
 
 ##
-# avs_aes hdl files
+# hdl files
 ##
 CORE_SRC =$(HDL_DIR)core/std_functions.vhd \
 		 $(HDL_DIR)core/mod_sim_exp_pkg.vhd \

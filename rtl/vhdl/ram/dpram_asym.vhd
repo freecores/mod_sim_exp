@@ -61,16 +61,15 @@ entity dpram_asym is
     wrwidth : integer := 2; -- write width, must be smaller than or equal to 32
     device  : string  := "xilinx"  -- device template to use
   );
-  port (
+  port  (
+    clk : in std_logic;
     -- write port
-    clkA   : in std_logic;
-    waddrA : in std_logic_vector(log2((rddepth*32)/wrwidth)-1 downto 0);
-    weA    : in std_logic;
-    dinA   : in std_logic_vector(wrwidth-1 downto 0);
+    waddr : in std_logic_vector(log2((rddepth*32)/wrwidth)-1 downto 0);
+    we    : in std_logic;
+    din   : in std_logic_vector(wrwidth-1 downto 0);
     -- read port
-    clkB   : in std_logic;
-    raddrB : in std_logic_vector(log2(rddepth)-1 downto 0);
-    doutB  : out std_logic_vector(31 downto 0)
+    raddr : in std_logic_vector(log2(rddepth)-1 downto 0);
+    dout  : out std_logic_vector(31 downto 0)
   );
 end dpram_asym;
 
@@ -83,29 +82,21 @@ begin
   xilinx_device : if device="xilinx" generate
     -- the memory
     type ram_type is array (wrdepth-1 downto 0) of std_logic_vector (wrwidth-1 downto 0);
-    shared variable RAM : ram_type := (others => (others => '0'));
+    signal RAM : ram_type := (others => (others => '0'));
     
     -- xilinx constraint to use blockram resources
     attribute ram_style : string;
-    attribute ram_style of RAM:variable is "block";
+    attribute ram_style of ram:signal is "block";
   begin
-    -- Write port A
-    process (clkA)
+    process (clk)
     begin
-      if rising_edge(clkA) then
-        if (weA = '1') then
-          RAM(conv_integer(waddrA)) := dinA;
+      if (clk'event and clk = '1') then
+        if (we = '1') then
+          RAM(conv_integer(waddr)) <= din;
         end if;
-      end if;
-    end process;
-    
-    -- Read port B
-    process (clkB)
-    begin
-      if rising_edge(clkB) then
         for i in 0 to R-1 loop
-          doutB((i+1)*wrwidth-1 downto i*wrwidth)
-                <= RAM(conv_integer(raddrB & conv_std_logic_vector(i,log2(R))));
+          dout((i+1)*wrwidth-1 downto i*wrwidth)
+                <= RAM(conv_integer(raddr & conv_std_logic_vector(i,log2(R))));
         end loop;
       end if;
     end process;
@@ -116,7 +107,7 @@ begin
     type word_t is array(R-1 downto 0) of std_logic_vector(wrwidth-1 downto 0);
     type ram_t is array (0 to rddepth-1) of word_t;
   
-    shared variable ram : ram_t;
+    signal ram : ram_t;
     signal q_local : word_t;
     -- altera constraints:
     -- for smal depths:
@@ -127,22 +118,16 @@ begin
     --attribute ramstyle of RAM : signal is "M9K, no_rw_check";
   begin
     unpack: for i in 0 to R - 1 generate    
-      doutB(wrwidth*(i+1) - 1 downto wrwidth*i) <= q_local(i);
+      dout(wrwidth*(i+1) - 1 downto wrwidth*i) <= q_local(i);
     end generate unpack;
   
-    process(clkA)
+    process(clk, we)
     begin
-      if(rising_edge(clkA)) then 
-        if(weA = '1') then
-          ram(conv_integer(waddrA)/R)(conv_integer(waddrA) mod R) := dinA;
+      if(rising_edge(clk)) then 
+        if(we = '1') then
+          ram(conv_integer(waddr)/R)(conv_integer(waddr) mod R) <= din;
         end if;
-      end if;
-    end process;
-    
-    process(clkB)
-    begin
-      if(rising_edge(clkB)) then 
-        q_local <= ram(conv_integer(raddrB));
+        q_local <= ram(conv_integer(raddr));
       end if;
     end process;
   end generate;

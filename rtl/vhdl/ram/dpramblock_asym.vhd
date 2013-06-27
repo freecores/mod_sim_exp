@@ -62,15 +62,14 @@ entity dpramblock_asym is
     device : string  := "xilinx"
   );
   port (
-    -- write port A
-    clkA   : in std_logic;
-    waddrA : in std_logic_vector(log2((width*depth)/32)-1 downto 0);
-    weA    : in std_logic;
-    dinA   : in std_logic_vector(31 downto 0);
-    -- read port B
-    clkB   : in std_logic;
-    raddrB : in std_logic_vector(log2(depth)-1 downto 0);
-    doutB  : out std_logic_vector(width-1 downto 0)
+    clk : in std_logic;
+    -- write port
+    waddr : in std_logic_vector(log2((width*depth)/32)-1 downto 0);
+    we    : in std_logic;
+    din   : in std_logic_vector(31 downto 0);
+    -- read port
+    raddr : in std_logic_vector(log2(depth)-1 downto 0);
+    dout  : out std_logic_vector(width-1 downto 0)
   );
 end dpramblock_asym;
 
@@ -93,20 +92,18 @@ begin
       device  => device
     )
     port map(
-      
+      clk => clk,
       -- write port
-      clkA   => clkA,
-      waddrA => waddrA,
-      weA    => weA,
-      dinA   => dinA((i+1)*RAMwrwidth-1 downto RAMwrwidth*i),
+      waddr => waddr,
+      we    => we,
+      din   => din((i+1)*RAMwrwidth-1 downto RAMwrwidth*i),
       -- read port
-      clkB   => clkB,
-      raddrB => raddrB,
-      doutB  => dout_RAM(i)
+      raddr => raddr,
+      dout  => dout_RAM(i)
     );
     
     map_output : for j in 0 to nrRAMs-1 generate
-      doutB(j*32+(i+1)*RAMwrwidth-1 downto j*32+i*RAMwrwidth)
+      dout(j*32+(i+1)*RAMwrwidth-1 downto j*32+i*RAMwrwidth)
           <= dout_RAM(i)((j+1)*RAMwrwidth-1 downto j*RAMwrwidth);
     end generate;
   end generate;

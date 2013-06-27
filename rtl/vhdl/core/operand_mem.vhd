@@ -72,17 +72,17 @@ entity operand_mem is
     nr_op     : integer := 4; -- nr of operand storages, has to be greater than nr_m
     nr_m      : integer := 2; -- nr of modulus storages
     mem_style : string  := "asym"; -- xil_prim, generic, asym are valid options
-    device    : string  := "xilinx"   -- xilinx, altera are valid options
+    device    : string  := "altera"   -- xilinx, altera are valid options
   );
   port(
+    -- system clock
+    clk : in std_logic;
     -- data interface (plb side)
-    bus_clk      : in std_logic;
     data_in      : in std_logic_vector(31 downto 0);
     data_out     : out std_logic_vector(31 downto 0);
     rw_address   : in std_logic_vector(8 downto 0);
     write_enable : in std_logic;
     -- operand interface (multiplier side)
-    core_clk  : in std_logic;
     op_sel    : in std_logic_vector(log2(nr_op)-1 downto 0);
     xy_out    : out std_logic_vector((width-1) downto 0);
     m         : out std_logic_vector((width-1) downto 0);
@@ -132,8 +132,7 @@ begin
     -- xy operand storage
     xy_ram_xil : operand_ram 
     port map(
-      bus_clk         => bus_clk,
-      core_clk        => core_clk,
+      clk             => clk,
       collision       => collision,
       operand_addr    => xy_addr_i,
       operand_in      => xy_data_i,
@@ -150,7 +149,7 @@ begin
     -- modulus storage
     m_ram_xil : modulus_ram
     port map(
-      clk           => bus_clk,
+      clk           => clk,
       modulus_addr  => m_addr_i,
       write_modulus => load_m,
       modulus_in    => m_data_i,
@@ -166,8 +165,8 @@ begin
       depth => nr_op
     ) 
     port map(
+      clk             => clk,
       collision       => collision,
-      bus_clk         => bus_clk,
       operand_addr    => xy_addr_i,
       operand_in      => xy_data_i,
       operand_in_sel  => operand_in_sel_i,
@@ -176,7 +175,6 @@ begin
       operand_out     => xy_out,
       operand_out_sel => op_sel,
       result_dest_op  => result_dest_op,
-      core_clk        => core_clk,
       write_result    => load_result,
       result_in       => result_in
     );
@@ -188,12 +186,11 @@ begin
       depth => nr_m
     )
     port map(
-      bus_clk         => bus_clk,
+      clk            => clk,
       modulus_in_sel => modulus_in_sel_i,
       modulus_addr   => m_addr_i,
       write_modulus  => load_m,
       modulus_in     => m_data_i,
-      core_clk       => core_clk,
       modulus_out    => m,
       modulus_sel    => modulus_sel
     );
@@ -208,8 +205,8 @@ begin
       device => device
     ) 
     port map(
+      clk             => clk,
       collision       => collision,
-      bus_clk         => bus_clk,
       operand_addr    => xy_addr_i,
       operand_in      => xy_data_i,
       operand_in_sel  => operand_in_sel_i,
@@ -218,7 +215,6 @@ begin
       operand_out     => xy_out,
       operand_out_sel => op_sel,
       result_dest_op  => result_dest_op,
-      core_clk        => core_clk,
       write_result    => load_result,
       result_in       => result_in
     );
@@ -231,12 +227,11 @@ begin
       device => device
     )
     port map(
-      bus_clk        => bus_clk,
+      clk            => clk,
       modulus_in_sel => modulus_in_sel_i,
       modulus_addr   => m_addr_i,
       write_modulus  => load_m,
       modulus_in     => m_data_i,
-      core_clk       => core_clk,
       modulus_out    => m,
       modulus_sel    => modulus_sel
     );

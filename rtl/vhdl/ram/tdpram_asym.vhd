@@ -62,14 +62,13 @@ entity tdpram_asym is
     device : string  := "xilinx"
   );
   port  (
+    clk : in std_logic;
     -- port A (widthA)-bit
-    clkA  : in std_logic;
     addrA : in std_logic_vector(log2((depthB*32)/widthA)-1 downto 0);
     weA   : in std_logic;
     dinA  : in std_logic_vector(widthA-1 downto 0);
     doutA : out std_logic_vector(widthA-1 downto 0);
     -- port B 32-bit
-    clkB  : in std_logic;
     addrB : in std_logic_vector(log2(depthB)-1 downto 0);
     weB   : in std_logic;
     dinB  : in std_logic_vector(31 downto 0);
@@ -93,8 +92,11 @@ begin
     --   - the RAM has only one write port whose data width is maxWIDTH
     -- In all other cases, ram can be a signal.
     shared variable ram : ramType := (others => (others => '0'));
+	 signal clkA : std_logic;
+	 signal clkB : std_logic;
 	 
   begin
+	 clkA <= clk;
     process (clkA)
     begin
       if rising_edge(clkA) then
@@ -105,6 +107,7 @@ begin
       end if;
     end process;
 	 
+	 clkB <= clk;
     process (clkB)
     begin
       if rising_edge(clkB) then     
@@ -146,9 +149,9 @@ begin
     end generate unpack;
   
     --port B
-    process(clkB)
+    process(clk)
     begin
-      if(rising_edge(clkB)) then 
+      if(rising_edge(clk)) then 
         if(weB = '1') then
           ram(conv_integer(addrB)) <= wB_local;
         end if;
@@ -157,9 +160,9 @@ begin
     end process;
   
     -- port A
-    process(clkA)
+    process(clk)
     begin
-      if(rising_edge(clkA)) then 
+      if(rising_edge(clk)) then 
         doutA <= ram(conv_integer(addrA) / R )(conv_integer(addrA) mod R);
         if(weA ='1') then
           ram(conv_integer(addrA) / R)(conv_integer(addrA) mod R) <= dinA;

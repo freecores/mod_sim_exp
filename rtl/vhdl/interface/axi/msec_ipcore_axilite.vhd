@@ -112,7 +112,6 @@ entity msec_ipcore_axilite is
     --USER ports
     calc_time                     : out std_logic;
     IntrEvent                     : out std_logic;
-    core_clk                      : in std_logic;
     -------------------------
     -- AXI4lite interface
     -------------------------
@@ -388,8 +387,7 @@ begin
     C_FPGA_MAN        => C_FPGA_MAN
   )
   port map(
-    bus_clk   => S_AXI_ACLK,
-    core_clk  => core_clk,
+    clk   => S_AXI_ACLK,
     reset => reset,
       -- operand memory interface (plb shared memory)
     write_enable => core_write_enable,
