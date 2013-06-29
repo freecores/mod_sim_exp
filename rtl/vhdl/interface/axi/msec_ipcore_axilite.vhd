@@ -195,6 +195,8 @@ architecture IMP of msec_ipcore_axilite is
   -- Signals for multiplier core control
   ------------------------------------------------------------------
   signal core_start                     : std_logic;
+  signal core_start_bit                 : std_logic;
+  signal core_start_bit_d               : std_logic;
   signal core_exp_m                     : std_logic;
   signal core_p_sel                     : std_logic_vector(1 downto 0);
   signal core_dest_op_single            : std_logic_vector(1 downto 0);
@@ -279,7 +281,7 @@ begin
   core_dest_op_single <= slv_reg(29 downto 28);
   core_x_sel_single <= slv_reg(27 downto 26);
   core_y_sel_single <= slv_reg(25 downto 24);
-  core_start <= slv_reg(23);
+  core_start_bit <= slv_reg(23);
   core_exp_m <= slv_reg(22);
   core_modulus_sel <= slv_reg(21);
   reset <= (not S_AXI_ARESETN) or slv_reg(20);
@@ -300,9 +302,17 @@ begin
     end if;
   end process SLAVE_REG_WRITE_PROC;
   
+  -- create start pulse of 1 clk wide
+  START_PULSE : process(S_AXI_ACLK)
+  begin
+    if rising_edge(S_AXI_ACLK) then
+      core_start_bit_d <= core_start_bit;
+    end if;
+  end process;
+  core_start <= core_start_bit and not core_start_bit_d;
+  
   -- interrupt and flags
   core_interrupt <= core_ready or core_mem_collision or core_fifo_full or core_fifo_nopush;
-  IntrEvent <= core_interrupt;
   
   FLAGS_CNTRL_PROC : process(S_AXI_ACLK, reset) is
   begin
@@ -310,7 +320,7 @@ begin
       core_flags <= (others => '0');
       load_flags <= '0';
     elsif rising_edge(S_AXI_ACLK) then
-      if core_start = '1' then
+      if core_start = '1' then  -- flags get resetted when core starts new operation
         core_flags <= (others => '0');
       else
         if core_ready = '1' then
@@ -337,6 +347,8 @@ begin
       load_flags <= core_interrupt;
     end if;
   end process FLAGS_CNTRL_PROC;
+  
+  IntrEvent <= core_flags(15) or core_flags(14) or core_flags(13) or core_flags(12);
   
   -- adress decoder
   with address(14 downto 12) select
