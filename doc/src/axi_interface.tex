@@ -198,5 +198,4 @@ address and the most significant bit on the highest address. A write to the RAM 
 supported due to the structure of the RAM.
 
 \section{Handling interrupts}
-When the embedded processor receives an interrupt signal from this core, it is up to the controlling software to
-determine the source of the interrupt by reading out the interrupt flag of the control register.
+When the embedded processor receives an interrupt signal from this core, it is up to the controlling software to determine the source of the interrupt by reading out the interrupt flags of the control register. After handling the interrupt, the appropriate flag must be cleared by user. A reset or core start operation also resets the flags. The interrupt signal is high level sensitive.
