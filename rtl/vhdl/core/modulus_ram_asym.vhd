@@ -64,17 +64,18 @@ entity modulus_ram_asym is
   generic(
     width : integer := 1536;  -- must be a multiple of 32
     depth : integer := 2;     -- nr of moduluses
-    device : string := "xilinx"
+    device : string := "altera"
   );
   port(
-    clk            : in std_logic;
       -- bus side
+    bus_clk        : in std_logic;
     write_modulus  : in std_logic; -- write enable
     modulus_in_sel : in std_logic_vector(log2(depth)-1 downto 0); -- modulus operand to write to
     modulus_addr   : in std_logic_vector(log2((width)/32)-1 downto 0); -- modulus word(32-bit) address
     modulus_in     : in std_logic_vector(31 downto 0); -- modulus word data in
     modulus_sel    : in std_logic_vector(log2(depth)-1 downto 0); -- selects the modulus to use for multiplications
       -- multiplier side
+    core_clk       : in std_logic;
     modulus_out    : out std_logic_vector(width-1 downto 0)
   );
 end modulus_ram_asym;
@@ -107,14 +108,15 @@ begin
       device  => device
     )
     port map(
-      clk => clk,
       -- write port
-      waddr => waddr,
-      we    => write_modulus,
-      din   => modulus_in,
+      clkA   => bus_clk,
+      waddrA => waddr,
+      weA    => write_modulus,
+      dinA   => modulus_in,
       -- read port
-      raddr => modulus_sel,
-      dout  => modulus_out
+      clkB   => core_clk,
+      raddrB => modulus_sel,
+      doutB  => modulus_out
     );
   end generate;
   
@@ -135,14 +137,15 @@ begin
           device => device
         )
         port map(
-          clk => clk,
           -- write port
-          waddr => waddr,
-          we    => we_RAM(i),
-          din   => modulus_in,
+          clkA   => bus_clk,
+          waddrA => waddr,
+          weA    => we_RAM(i),
+          dinA   => modulus_in,
           -- read port
-          raddr => modulus_sel,
-          dout  => modulus_out((i+1)*RAMblock_maxwidth-1 downto i*RAMblock_maxwidth)
+          clkB   => core_clk,
+          raddrB => modulus_sel,
+          doutB  => modulus_out((i+1)*RAMblock_maxwidth-1 downto i*RAMblock_maxwidth)
         );
         -- we
         process (write_modulus, modulus_addr)
@@ -169,14 +172,15 @@ begin
           device => device
         )
         port map(
-          clk => clk,
           -- write port
-          waddr => waddr_part,
-          we    => we_part,
-          din   => modulus_in,
+          clkA   => bus_clk,
+          waddrA => waddr_part,
+          weA    => we_part,
+          dinA   => modulus_in,
           -- read port
-          raddr => modulus_sel,
-          dout  => modulus_out(width-1 downto i*RAMblock_maxwidth)
+          clkB   => core_clk,
+          raddrB => modulus_sel,
+          doutB  => modulus_out(width-1 downto i*RAMblock_maxwidth)
         );
         
         -- we_part

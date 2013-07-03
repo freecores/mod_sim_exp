@@ -99,7 +99,7 @@ entity msec_ipcore_axilite is
     C_NR_STAGES_TOTAL : integer := 96;
     C_NR_STAGES_LOW   : integer := 32;
     C_SPLIT_PIPELINE  : boolean := true;
-    C_FIFO_DEPTH      : integer := 32;
+    C_FIFO_AW         : integer := 7;
     C_MEM_STYLE       : string  := "asym"; -- xil_prim, generic, asym are valid options
     C_FPGA_MAN        : string  := "xilinx";    -- xilinx, altera are valid options
     -- Bus protocol parameters
@@ -110,6 +110,7 @@ entity msec_ipcore_axilite is
   );
   port(
     --USER ports
+    core_clk                      : in std_logic;
     calc_time                     : out std_logic;
     IntrEvent                     : out std_logic;
     -------------------------
@@ -394,13 +395,14 @@ begin
     C_NR_STAGES_TOTAL => C_NR_STAGES_TOTAL,
     C_NR_STAGES_LOW   => C_NR_STAGES_LOW,
     C_SPLIT_PIPELINE  => C_SPLIT_PIPELINE,
-    C_FIFO_DEPTH      => C_FIFO_DEPTH,
+    C_FIFO_AW         => C_FIFO_AW,
     C_MEM_STYLE       => C_MEM_STYLE,
     C_FPGA_MAN        => C_FPGA_MAN
   )
   port map(
-    clk   => S_AXI_ACLK,
-    reset => reset,
+    bus_clk   => S_AXI_ACLK,
+    core_clk  => core_clk,
+    reset     => reset,
       -- operand memory interface (plb shared memory)
     write_enable => core_write_enable,
     data_in      => S_AXI_WDATA(31 downto 0),

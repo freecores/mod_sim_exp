@@ -68,9 +68,9 @@ entity operand_ram_asym is
   );
   port(
       -- global ports
-    clk       : in std_logic;
     collision : out std_logic; -- 1 if simultaneous write on RAM
       -- bus side connections (32-bit serial)
+    bus_clk        : in std_logic;
     write_operand  : in std_logic; -- write_enable
     operand_in_sel : in std_logic_vector(log2(depth)-1 downto 0); -- operand to write to
     operand_addr   : in std_logic_vector(log2(width/32)-1 downto 0); -- address of operand word to write
@@ -78,6 +78,7 @@ entity operand_ram_asym is
     result_out     : out std_logic_vector(31 downto 0); -- operand out, reading is always result operand
     operand_out_sel : in std_logic_vector(log2(depth)-1 downto 0); -- operand to give to multiplier
       -- multiplier side connections (width-bit parallel)
+    core_clk        : in std_logic;
     result_dest_op  : in std_logic_vector(log2(depth)-1 downto 0); -- operand select for result
     operand_out     : out std_logic_vector(width-1 downto 0); -- operand out to multiplier
     write_result    : in std_logic; -- write enable for multiplier side
@@ -126,13 +127,14 @@ begin
       device => device
     )
     port map(
-      clk => clk,
       -- port A 32-bit
+      clkA  => bus_clk,
       addrA => addrA_single,
       weA   => write_operand_i,
       dinA  => operand_in,
       doutA => result_out,
       -- port B (width)-bit
+      clkB  => core_clk,
       addrB => mult_op_sel,
       weB   => write_result,
       dinB  => result_in,
@@ -159,13 +161,14 @@ begin
           device => device
         )
         port map(
-          clk => clk,
           -- port A 32-bit
+          clkA  => bus_clk,
           addrA => addrA,
           weA   => weA_RAM(i),
           dinA  => operand_in,
           doutA => doutA_RAM(i),
           -- port B (width)-bit
+          clkB  => core_clk,
           addrB => mult_op_sel,
           weB   => write_result,
           dinB  => result_in((i+1)*RAMblock_maxwidth-1 downto i*RAMblock_maxwidth),
@@ -208,13 +211,14 @@ begin
           device => device
         )
         port map(
-          clk => clk,
           -- port A 32-bit
+          clkA  => bus_clk,
           addrA => addrA_part,
           weA   => weA_part,
           dinA  => operand_in,
           doutA => doutA_RAM(i),
           -- port B (width)-bit
+          clkB  => core_clk,
           addrB => mult_op_sel,
           weB   => write_result,
           dinB  => result_in(width-1 downto i*RAMblock_maxwidth),

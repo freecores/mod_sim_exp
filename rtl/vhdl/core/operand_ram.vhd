@@ -55,15 +55,16 @@ use mod_sim_exp.mod_sim_exp_pkg.all;
 entity operand_ram is
   port( -- write_operand_ack voorzien?
     -- global ports
-    clk       : in std_logic;
     collision : out std_logic;
     -- bus side connections (32-bit serial)
+    bus_clk        : in std_logic;
     operand_addr   : in std_logic_vector(5 downto 0);
     operand_in     : in std_logic_vector(31 downto 0);
     operand_in_sel : in std_logic_vector(1 downto 0);
     result_out     : out std_logic_vector(31 downto 0);
     write_operand  : in std_logic;
     -- multiplier side connections (1536 bit parallel)
+    core_clk        : in std_logic;
     result_dest_op  : in std_logic_vector(1 downto 0);
     operand_out     : out std_logic_vector(1535 downto 0);
     operand_out_sel : in std_logic_vector(1 downto 0); -- controlled by bus side
@@ -81,11 +82,11 @@ architecture Behavioral of operand_ram is
   signal write_operand_i : std_logic;
 
   -- port b signals
-  signal addrb  : std_logic_vector(5 downto 0);
+  signal addrb  : std_logic_vector(1 downto 0);
   signal web    : std_logic_vector(0 downto 0);
-  signal doutb0 : std_logic_vector(31 downto 0);
-  signal doutb1 : std_logic_vector(31 downto 0);
-  signal doutb2 : std_logic_vector(31 downto 0);
+  signal douta0 : std_logic_vector(31 downto 0);
+  signal douta1 : std_logic_vector(31 downto 0);
+  signal douta2 : std_logic_vector(31 downto 0);
 
 begin
 
@@ -99,70 +100,70 @@ begin
 	-- the dual port ram has a depth of 4 (each layer contains an operand)
 	-- result is always stored in position 3
 	-- doutb is always result
-	with write_operand_i select
-		addra <= operand_in_sel & operand_addr(3 downto 0) when '1',
-		         operand_out_sel & "0000" when others;
+	with write_result select
+  addrb <= result_dest_op when '1',
+           operand_out_sel when others;
+	
+	
 	
 	with operand_addr(5 downto 4) select
 		part_enable <=  "0001" when "00",
 		                "0010" when "01",
 				            "0100" when "10",
 				            "1000" when others;
-
-	with write_operand_i select
-		wea <= part_enable when '1',
-		       "0000" when others;
-	
-	-- we can only read back from the result (stored in result_dest_op)
-	addrb <= result_dest_op & operand_addr(3 downto 0);
-	
   
+  with write_operand select
+    wea <= part_enable when '1',
+           "0000" when others;
+  
+	addra <= operand_in_sel & operand_addr(3 downto 0);
+	
 	with operand_addr(5 downto 4) select
-		result_out <= doutb0 when "00",
-		              doutb1 when "01",
-				          doutb2 when others;
+		result_out <= douta0 when "00",
+		              douta1 when "01",
+				          douta2 when others;
 	
 	-- 3 instances of a dual port ram to store the parts of the operand
   op_0 : operand_dp
   port map (
-    clka  => clk,
+    clka  => bus_clk,
     wea   => wea(0 downto 0),
     addra => addra,
     dina  => operand_in,
-    douta => operand_out(511 downto 0),
-    clkb  => clk,
+    douta => douta0,
+    clkb  => core_clk,
     web   => web,
     addrb => addrb,
     dinb  => result_in(511 downto 0),
-    doutb => doutb0
+    doutb => operand_out(511 downto 0)
   );
 
   op_1 : operand_dp
   port map (
-    clka  => clk,
+    clka  => bus_clk,
     wea   => wea(1 downto 1),
     addra => addra,
     dina  => operand_in,
-    douta => operand_out(1023 downto 512),
-    clkb  => clk,
+    douta => douta1,
+    clkb  => core_clk,
     web   => web,
     addrb => addrb,
     dinb  => result_in(1023 downto 512),
-    doutb => doutb1
+    doutb => operand_out(1023 downto 512)
   );
 
   op_2 : operand_dp
   port map (
-    clka  => clk,
+    clka  => bus_clk,
     wea   => wea(2 downto 2),
     addra => addra,
     dina  => operand_in,
-    douta => operand_out(1535 downto 1024),
-    clkb  => clk,
+    douta => douta2,
+    clkb  => core_clk,
     web   => web,
     addrb => addrb,
     dinb  => result_in(1535 downto 1024),
-    doutb => doutb2
+    doutb => operand_out(1535 downto 1024)
   );
 
 end Behavioral;

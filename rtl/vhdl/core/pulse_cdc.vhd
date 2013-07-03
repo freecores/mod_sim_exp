@@ -1,16 +1,17 @@
 ----------------------------------------------------------------------  
-----  dpram_generic                                               ---- 
+----  pulse_cdc                                                   ---- 
 ----                                                              ---- 
 ----  This file is part of the                                    ----
 ----    Modular Simultaneous Exponentiation Core project          ---- 
 ----    http://www.opencores.org/cores/mod_sim_exp/               ---- 
 ----                                                              ---- 
 ----  Description                                                 ---- 
-----    behavorial description of a dual port ram with one 32-bit ----
-----    write port and one 32-bit read port                       ----            
+----    transfers a pulse (1clk wide) from clock domain A to      ----
+----    clock domain B by using a toggling signal. This design    ----
+----    avoids metastable states                                  ----
 ----                                                              ---- 
-----  Dependencies: none                                          ----
-----                                                              ----
+----  Dependencies: none                                          ---- 
+----                                                              ---- 
 ----  Authors:                                                    ----
 ----      - Geoffrey Ottoy, DraMCo research group                 ----
 ----      - Jonas De Craene, JonasDC@opencores.org                ---- 
@@ -46,59 +47,51 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 
-library mod_sim_exp;
-use mod_sim_exp.std_functions.all;
+entity pulse_cdc is
+	port (
+	  reset  : in std_logic;
+		clkA   : in std_logic;
+		pulseA : in std_logic;
+		clkB   : in std_logic;
+    pulseB : out std_logic
+	);
+end pulse_cdc;
 
--- altera infers ramblocks from a depth of 9
--- xilinx infers ramblocks from a depth of 2
-entity dpram_generic is
-  generic (
-    depth : integer := 2
-  );
-  port  (
-    -- write port A
-    clkA   : in std_logic;
-    waddrA : in std_logic_vector(log2(depth)-1 downto 0);
-    weA    : in std_logic;
-    dinA   : in std_logic_vector(31 downto 0);
-    -- read port B
-    clkB   : in std_logic;
-    raddrB : in std_logic_vector(log2(depth)-1 downto 0);
-    doutB  : out std_logic_vector(31 downto 0)
-  );
-end dpram_generic;
 
-architecture behavorial of dpram_generic is
-  -- the memory
-  type ram_type is array (depth-1 downto 0) of std_logic_vector (31 downto 0);
-  shared variable RAM : ram_type := (others => (others => '0'));
-  
-  -- xilinx constraint to use blockram resources
-  attribute ram_style : string;
-  attribute ram_style of ram:variable is "block";
-  -- altera constraints:
-  -- for smal depths:
-  --  if the synthesis option "allow any size of RAM to be inferred" is on, these lines 
-  --  may be left commented.
-  --  uncomment this attribute if that option is off and you know wich primitives should be used.
-  --attribute ramstyle : string;
-  --attribute ramstyle of RAM : variable is "M9K, no_rw_check";
+architecture arch of pulse_cdc is
+  signal pulseA_d : std_logic;
+  signal toggle : std_logic := '0';
+  signal toggle_d, toggle_d2, toggle_d3 : std_logic;
 begin
-  process (clkA)
+  
+  -- Convert pulse from clock domain A to a toggling signal
+  PulseAtoToggle : process (clkA, reset)
   begin
-    if rising_edge(clkA) then
-      if (weA = '1') then
-        RAM(conv_integer(waddrA)) := dinA;
+    if reset='1' then
+      toggle <= '0';
+    else 
+      if rising_edge(clkA) then
+        pulseA_d <= pulseA;
+        toggle <= toggle xor (pulseA and not pulseA_d);
       end if;
     end if;
   end process;
   
-  process (clkB)
+  -- Convert toggling signal to a pulse of 1clk wide to clock domain B
+  ToggletoPulseB : process (clkB, reset)
   begin
-    if rising_edge(clkB) then
-      doutB <= RAM(conv_integer(raddrB));
+    if reset='1' then
+      toggle_d <= '0';
+      toggle_d2 <= '0';
+      toggle_d3 <= '0';
+    else
+      if rising_edge(clkB) then
+        toggle_d <= toggle; -- this signal may have metastability isues
+        toggle_d2 <= toggle_d; -- stable now
+        toggle_d3 <= toggle_d2;
+      end if;
     end if;
   end process;
   
-end behavorial;
-
+  pulseB <= toggle_d2 xor toggle_d3;
+end arch;

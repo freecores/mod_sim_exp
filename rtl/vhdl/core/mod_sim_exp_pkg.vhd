@@ -479,12 +479,12 @@ package mod_sim_exp_pkg is
       wea   : in std_logic_vector(0 downto 0);
       addra : in std_logic_vector(5 downto 0);
       dina  : in std_logic_vector(31 downto 0);
-      douta : out std_logic_vector(511 downto 0);
+      douta : out std_logic_vector(31 downto 0);
       clkb  : in std_logic;
       web   : in std_logic_vector(0 downto 0);
-      addrb : in std_logic_vector(5 downto 0);
+      addrb : in std_logic_vector(1 downto 0);
       dinb  : in std_logic_vector(511 downto 0);
-      doutb : out std_logic_vector(31 downto 0)
+      doutb : out std_logic_vector(511 downto 0)
     );
   end component operand_dp;
   
@@ -510,16 +510,17 @@ package mod_sim_exp_pkg is
   -- 
   component fifo_primitive is
     port (
-      clk    : in  std_logic;
-      din    : in  std_logic_vector (31 downto 0);
-      dout   : out  std_logic_vector (31 downto 0);
-      empty  : out  std_logic;
-      full   : out  std_logic;
-      push   : in  std_logic;
-      pop    : in  std_logic;
-      reset  : in std_logic;
-      nopop  : out std_logic;
-      nopush : out std_logic
+      pop_clk  : in  std_logic;
+      push_clk : in  std_logic;
+      din      : in  std_logic_vector (31 downto 0);
+      dout     : out  std_logic_vector (31 downto 0);
+      empty    : out  std_logic;
+      full     : out  std_logic;
+      push     : in  std_logic;
+      pop      : in  std_logic;
+      reset    : in std_logic;
+      nopop    : out std_logic;
+      nopush   : out std_logic
     );
   end component fifo_primitive;
   
@@ -532,15 +533,16 @@ package mod_sim_exp_pkg is
   component operand_ram is
     port(
       -- global ports
-      clk       : in std_logic;
       collision : out std_logic;
       -- bus side connections (32-bit serial)
+      bus_clk       : in std_logic;
       operand_addr   : in std_logic_vector(5 downto 0);
       operand_in     : in std_logic_vector(31 downto 0);
       operand_in_sel : in std_logic_vector(1 downto 0);
       result_out     : out std_logic_vector(31 downto 0);
       write_operand  : in std_logic;
       -- multiplier side connections (1536 bit parallel)
+      core_clk       : in std_logic;
       result_dest_op  : in std_logic_vector(1 downto 0);
       operand_out     : out std_logic_vector(1535 downto 0);
       operand_out_sel : in std_logic_vector(1 downto 0); -- controlled by bus side
@@ -578,14 +580,15 @@ package mod_sim_exp_pkg is
       depth : integer := 2
     );
     port  (
-      clk : in std_logic;
-      -- write port
-      waddr : in std_logic_vector(log2(depth)-1 downto 0);
-      we    : in std_logic;
-      din   : in std_logic_vector(31 downto 0);
-      -- read port
-      raddr : in std_logic_vector(log2(depth)-1 downto 0);
-      dout  : out std_logic_vector(31 downto 0)
+      -- write port A
+      clkA   : in std_logic;
+      waddrA : in std_logic_vector(log2(depth)-1 downto 0);
+      weA    : in std_logic;
+      dinA   : in std_logic_vector(31 downto 0);
+      -- read port B
+      clkB   : in std_logic;
+      raddrB : in std_logic_vector(log2(depth)-1 downto 0);
+      doutB  : out std_logic_vector(31 downto 0)
     );
   end component dpram_generic;
   
@@ -651,14 +654,15 @@ package mod_sim_exp_pkg is
       depth : integer := 2      -- nr of moduluses
     );
     port(
-      clk            : in std_logic;
         -- bus side
+      bus_clk        : in std_logic;
       write_modulus  : in std_logic; -- write enable
       modulus_in_sel : in std_logic_vector(log2(depth)-1 downto 0); -- modulus operand to write to
       modulus_addr   : in std_logic_vector(log2((width)/32)-1 downto 0); -- modulus word(32-bit) address
       modulus_in     : in std_logic_vector(31 downto 0); -- modulus word data in
       modulus_sel    : in std_logic_vector(log2(depth)-1 downto 0); -- selects the modulus to use for multiplications
         -- multiplier side
+      core_clk       : in std_logic;
       modulus_out    : out std_logic_vector(width-1 downto 0)
     );
   end component modulus_ram_gen;
@@ -676,9 +680,9 @@ package mod_sim_exp_pkg is
     );
     port(
         -- global ports
-      clk       : in std_logic;
       collision : out std_logic; -- 1 if simultaneous write on RAM
         -- bus side connections (32-bit serial)
+      bus_clk        : in std_logic;
       write_operand  : in std_logic; -- write_enable
       operand_in_sel : in std_logic_vector(log2(depth)-1 downto 0); -- operand to write to
       operand_addr   : in std_logic_vector(log2(width/32)-1 downto 0); -- address of operand word to write
@@ -686,6 +690,7 @@ package mod_sim_exp_pkg is
       result_out     : out std_logic_vector(31 downto 0); -- operand out, reading is always result operand
       operand_out_sel : in std_logic_vector(log2(depth)-1 downto 0); -- operand to give to multiplier
         -- multiplier side connections (width-bit parallel)
+      core_clk        : in std_logic;
       result_dest_op  : in std_logic_vector(log2(depth)-1 downto 0); -- operand select for result
       operand_out     : out std_logic_vector(width-1 downto 0); -- operand out to multiplier
       write_result    : in std_logic; -- write enable for multiplier side
@@ -706,20 +711,21 @@ package mod_sim_exp_pkg is
   --    asymmetric ram.
   --
   component dpram_asym is
-    generic(
+    generic (
       rddepth : integer := 4; -- nr of 32-bit words
       wrwidth : integer := 2; -- write width, must be smaller than or equal to 32
       device  : string  := "xilinx"  -- device template to use
     );
-    port(
-      clk : in std_logic;
+    port (
       -- write port
-      waddr : in std_logic_vector(log2((rddepth*32)/wrwidth)-1 downto 0);
-      we    : in std_logic;
-      din   : in std_logic_vector(wrwidth-1 downto 0);
+      clkA   : in std_logic;
+      waddrA : in std_logic_vector(log2((rddepth*32)/wrwidth)-1 downto 0);
+      weA    : in std_logic;
+      dinA   : in std_logic_vector(wrwidth-1 downto 0);
       -- read port
-      raddr : in std_logic_vector(log2(rddepth)-1 downto 0);
-      dout  : out std_logic_vector(31 downto 0)
+      clkB   : in std_logic;
+      raddrB : in std_logic_vector(log2(rddepth)-1 downto 0);
+      doutB  : out std_logic_vector(31 downto 0)
     );
   end component dpram_asym;
   
@@ -731,20 +737,21 @@ package mod_sim_exp_pkg is
   --    port.
   -- 
   component dpramblock_asym is
-    generic(
+    generic (
       width  : integer := 256;  -- read width
       depth  : integer := 2;    -- nr of (width)-bit words
       device : string  := "xilinx"
     );
-    port(
-      clk : in std_logic;
-      -- write port
-      waddr : in std_logic_vector(log2((width*depth)/32)-1 downto 0);
-      we    : in std_logic;
-      din   : in std_logic_vector(31 downto 0);
-      -- read port
-      raddr : in std_logic_vector(log2(depth)-1 downto 0);
-      dout  : out std_logic_vector(width-1 downto 0)
+    port (
+      -- write port A
+      clkA   : in std_logic;
+      waddrA : in std_logic_vector(log2((width*depth)/32)-1 downto 0);
+      weA    : in std_logic;
+      dinA   : in std_logic_vector(31 downto 0);
+      -- read port B
+      clkB   : in std_logic;
+      raddrB : in std_logic_vector(log2(depth)-1 downto 0);
+      doutB  : out std_logic_vector(width-1 downto 0)
     );
   end component dpramblock_asym;
   
@@ -757,19 +764,20 @@ package mod_sim_exp_pkg is
   --    altera for asymmetric ram.
   --
   component tdpram_asym is
-    generic(
+    generic (
       depthB : integer := 4; -- nr of 32-bit words
       widthA : integer := 2;  -- port A width, must be smaller than or equal to 32
       device : string  := "xilinx"
     );
-    port(
-      clk : in std_logic;
+    port  (
       -- port A (widthA)-bit
+      clkA  : in std_logic;
       addrA : in std_logic_vector(log2((depthB*32)/widthA)-1 downto 0);
       weA   : in std_logic;
       dinA  : in std_logic_vector(widthA-1 downto 0);
       doutA : out std_logic_vector(widthA-1 downto 0);
       -- port B 32-bit
+      clkB  : in std_logic;
       addrB : in std_logic_vector(log2(depthB)-1 downto 0);
       weB   : in std_logic;
       dinB  : in std_logic_vector(31 downto 0);
@@ -790,14 +798,15 @@ package mod_sim_exp_pkg is
       width  : integer := 512;  -- width of portB
       device : string  := "xilinx"
     );
-    port  (
-      clk : in std_logic;
+    port (
       -- port A 32-bit
+      clkA  : in std_logic;
       addrA : in std_logic_vector(log2((width*depth)/32)-1 downto 0);
       weA   : in std_logic;
       dinA  : in std_logic_vector(31 downto 0);
       doutA : out std_logic_vector(31 downto 0);
       -- port B (width)-bit
+      clkB  : in std_logic;
       addrB : in std_logic_vector(log2(depth)-1 downto 0);
       weB   : in std_logic;
       dinB  : in std_logic_vector(width-1 downto 0);
@@ -822,14 +831,15 @@ package mod_sim_exp_pkg is
       device : string := "xilinx"
     );
     port(
-      clk            : in std_logic;
         -- bus side
+      bus_clk        : in std_logic;
       write_modulus  : in std_logic; -- write enable
       modulus_in_sel : in std_logic_vector(log2(depth)-1 downto 0); -- modulus operand to write to
       modulus_addr   : in std_logic_vector(log2((width)/32)-1 downto 0); -- modulus word(32-bit) address
       modulus_in     : in std_logic_vector(31 downto 0); -- modulus word data in
       modulus_sel    : in std_logic_vector(log2(depth)-1 downto 0); -- selects the modulus to use for multiplications
         -- multiplier side
+      core_clk       : in std_logic;
       modulus_out    : out std_logic_vector(width-1 downto 0)
     );
   end component modulus_ram_asym;
@@ -852,9 +862,9 @@ package mod_sim_exp_pkg is
     );
     port(
         -- global ports
-      clk       : in std_logic;
       collision : out std_logic; -- 1 if simultaneous write on RAM
         -- bus side connections (32-bit serial)
+      bus_clk        : in std_logic;
       write_operand  : in std_logic; -- write_enable
       operand_in_sel : in std_logic_vector(log2(depth)-1 downto 0); -- operand to write to
       operand_addr   : in std_logic_vector(log2(width/32)-1 downto 0); -- address of operand word to write
@@ -862,6 +872,7 @@ package mod_sim_exp_pkg is
       result_out     : out std_logic_vector(31 downto 0); -- operand out, reading is always result operand
       operand_out_sel : in std_logic_vector(log2(depth)-1 downto 0); -- operand to give to multiplier
         -- multiplier side connections (width-bit parallel)
+      core_clk        : in std_logic;
       result_dest_op  : in std_logic_vector(log2(depth)-1 downto 0); -- operand select for result
       operand_out     : out std_logic_vector(width-1 downto 0); -- operand out to multiplier
       write_result    : in std_logic; -- write enable for multiplier side
@@ -893,14 +904,14 @@ package mod_sim_exp_pkg is
       device    : string  := "altera"   -- xilinx, altera are valid options
     );
     port(
-      -- system clock
-      clk : in std_logic;
       -- data interface (plb side)
+      bus_clk      : in std_logic;
       data_in      : in std_logic_vector(31 downto 0);
       data_out     : out std_logic_vector(31 downto 0);
       rw_address   : in std_logic_vector(8 downto 0);
       write_enable : in std_logic;
       -- operand interface (multiplier side)
+      core_clk  : in std_logic;
       op_sel    : in std_logic_vector(log2(nr_op)-1 downto 0);
       xy_out    : out std_logic_vector((width-1) downto 0);
       m         : out std_logic_vector((width-1) downto 0);
@@ -913,6 +924,38 @@ package mod_sim_exp_pkg is
     );
   end component operand_mem;
   
+  
+  ---------------------- CLOCK DOMAIN CROSSING  ----------------------
+  
+  --------------------------------------------------------------------
+  -- pulse_cdc
+  --------------------------------------------------------------------
+  --    transfers a pulse (1clk wide) from clock domain A to clock domain B
+  --    by using a toggling signal. This design avoids metastable states
+  -- 
+  component pulse_cdc is
+    port (
+      reset  : in std_logic;
+      clkA   : in std_logic;
+      pulseA : in std_logic;
+      clkB   : in std_logic;
+      pulseB : out std_logic
+    );
+  end component pulse_cdc;
+  
+  --------------------------------------------------------------------
+  -- clk_sync
+  --------------------------------------------------------------------
+  --    transfers a signal from clock domain A to clock domain B. 
+  --    This design avoids metastable states
+  -- 
+  component clk_sync is
+    port (
+      sigA : in std_logic;
+      clkB : in std_logic;
+      sigB : out std_logic
+    );
+  end component clk_sync;
   
   
   ---------------------------- TOP LEVEL -----------------------------
@@ -930,14 +973,15 @@ package mod_sim_exp_pkg is
       C_NR_STAGES_TOTAL : integer := 96;
       C_NR_STAGES_LOW   : integer := 32;
       C_SPLIT_PIPELINE  : boolean := true;
-      C_FIFO_DEPTH      : integer := 32;
-      C_MEM_STYLE       : string  := "generic"; -- xil_prim, generic, asym are valid options
+      C_FIFO_AW         : integer := 7;      -- Address width for FIFO pointers
+      C_MEM_STYLE       : string  := "asym"; -- xil_prim, generic, asym are valid options
       C_FPGA_MAN        : string  := "xilinx"   -- xilinx, altera are valid options
     );
     port(
-      clk   : in  std_logic;
-      reset : in  std_logic;
+      core_clk : in  std_logic;
+      reset    : in  std_logic;
         -- operand memory interface (plb shared memory)
+      bus_clk      : in  std_logic;
       write_enable : in  std_logic; -- write data to operand ram
       data_in      : in  std_logic_vector (31 downto 0);  -- operand ram data in
       rw_address   : in  std_logic_vector (8 downto 0); -- operand ram address bus
@@ -957,7 +1001,7 @@ package mod_sim_exp_pkg is
       dest_op_single : in  std_logic_vector (1 downto 0); -- result destination operand selection
       p_sel          : in  std_logic_vector (1 downto 0); -- pipeline part selection
       calc_time      : out std_logic;
-      modulus_sel    : in std_logic -- selects which modulus to use for multiplications
+      modulus_sel    : in  std_logic   -- selects which modulus to use for multiplications
     );
   end component mod_sim_exp_core;
 

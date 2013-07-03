@@ -65,6 +65,8 @@ end mod_sim_exp_core_tb;
 architecture test of mod_sim_exp_core_tb is
   constant CLK_PERIOD : time := 10 ns;
   signal clk          : std_logic := '0';
+  constant CORE_CLK_PERIOD : time := 4 ns;
+  signal core_clk     : std_logic := '0';
   signal reset        : std_logic := '1';
   file input          : text open read_mode is "src/sim_input.txt";
   file output         : text open write_mode is "out/sim_output.txt";
@@ -76,7 +78,7 @@ architecture test of mod_sim_exp_core_tb is
   constant C_NR_STAGES_TOTAL : integer := 96;
   constant C_NR_STAGES_LOW   : integer := 32;
   constant C_SPLIT_PIPELINE  : boolean := true; 
-  constant C_FIFO_DEPTH      : integer := 32; -- set to (maximum exponent width)/16
+  constant C_FIFO_AW         : integer := 7; -- set to log2( (maximum exponent width)/16 )
   constant C_MEM_STYLE       : string  := "asym"; -- xil_prim, generic, asym are valid options
   constant C_FPGA_MAN        : string  := "xilinx";  -- xilinx, altera are valid options
   
@@ -123,6 +125,16 @@ begin
     wait for CLK_PERIOD/2;
     clk <= '1';
     wait for CLK_PERIOD/2;
+  end loop;
+end process;
+
+core_clk_process : process
+begin
+  while (true) loop
+    core_clk <= '0';
+    wait for CORE_CLK_PERIOD/2;
+    core_clk <= '1';
+    wait for CORE_CLK_PERIOD/2;
   end loop;
 end process;
 
@@ -677,13 +689,14 @@ generic map(
   C_NR_STAGES_TOTAL => C_NR_STAGES_TOTAL,
   C_NR_STAGES_LOW   => C_NR_STAGES_LOW,
   C_SPLIT_PIPELINE  => C_SPLIT_PIPELINE,
-  C_FIFO_DEPTH      => C_FIFO_DEPTH,
+  C_FIFO_AW         => C_FIFO_AW,
   C_MEM_STYLE       => C_MEM_STYLE, -- xil_prim, generic, asym are valid options
   C_FPGA_MAN        => C_FPGA_MAN   -- xilinx, altera are valid options
 )
 port map(
-  clk   => clk,
-  reset => reset,
+  bus_clk   => clk,
+  core_clk  => core_clk,
+  reset     => reset,
 -- operand memory interface (plb shared memory)
   write_enable => core_write_enable,
   data_in      => core_data_in,

@@ -61,14 +61,15 @@ entity modulus_ram_gen is
     depth : integer := 2      -- nr of moduluses
   );
   port(
-    clk            : in std_logic;
       -- bus side
+    bus_clk        : in std_logic;
     write_modulus  : in std_logic; -- write enable
     modulus_in_sel : in std_logic_vector(log2(depth)-1 downto 0); -- modulus operand to write to
     modulus_addr   : in std_logic_vector(log2((width)/32)-1 downto 0); -- modulus word(32-bit) address
     modulus_in     : in std_logic_vector(31 downto 0); -- modulus word data in
     modulus_sel    : in std_logic_vector(log2(depth)-1 downto 0); -- selects the modulus to use for multiplications
       -- multiplier side
+    core_clk       : in std_logic;
     modulus_out    : out std_logic_vector(width-1 downto 0)
   );
 end modulus_ram_gen;
@@ -96,14 +97,15 @@ begin
       depth => depth
     )
     port map(
-      clk => clk,
       -- write port
-      waddr => modulus_wraddr(total_aw-1 downto RAMselect_aw),
-      we    => we(i),
-      din   => modulus_in,
+      clkA   => bus_clk,
+      waddrA => modulus_wraddr(total_aw-1 downto RAMselect_aw),
+      weA    => we(i),
+      dinA   => modulus_in,
       -- read port
-      raddr => modulus_rdaddr,
-      dout  => modulus_out(((i+1)*32)-1 downto i*32)
+      clkB   => core_clk,
+      raddrB => modulus_rdaddr,
+      doutB  => modulus_out(((i+1)*32)-1 downto i*32)
     );
     -- connect the w
     process (write_modulus, modulus_wraddr)

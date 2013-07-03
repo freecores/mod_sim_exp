@@ -162,7 +162,7 @@ entity mod_sim_exp_IPcore is
     C_NR_STAGES_TOTAL : integer := 96;
     C_NR_STAGES_LOW   : integer := 32;
     C_SPLIT_PIPELINE  : boolean := true;
-    C_FIFO_DEPTH      : integer := 32;
+    C_FIFO_AW         : integer := 7;
     C_MEM_STYLE       : string  := "xil_prim"; -- xil_prim, generic, asym are valid options
     C_FPGA_MAN        : string  := "xilinx";    -- xilinx, altera are valid options
     -- ADD USER GENERICS ABOVE THIS LINE ---------------
@@ -200,7 +200,8 @@ entity mod_sim_exp_IPcore is
   (
     -- ADD USER PORTS BELOW THIS LINE ------------------
     --USER ports added here
-   calc_time                      : out std_logic;
+    calc_time                      : out std_logic;
+    core_clk                       : in std_logic;
     -- ADD USER PORTS ABOVE THIS LINE ------------------
 
     -- DO NOT EDIT BELOW THIS LINE ---------------------
@@ -580,7 +581,7 @@ begin
       C_NR_STAGES_TOTAL => C_NR_STAGES_TOTAL,
       C_NR_STAGES_LOW   => C_NR_STAGES_LOW,
       C_SPLIT_PIPELINE  => C_SPLIT_PIPELINE,
-      C_FIFO_DEPTH      => C_FIFO_DEPTH,
+      C_FIFO_AW         => C_FIFO_AW,
       C_MEM_STYLE       => C_MEM_STYLE,
       C_FPGA_MAN        => C_FPGA_MAN,
       -- MAP USER GENERICS ABOVE THIS LINE ---------------
@@ -596,6 +597,7 @@ begin
       -- MAP USER PORTS BELOW THIS LINE ------------------
       --USER ports mapped here
       calc_time                      => calc_time,
+      core_clk                       => core_clk,
       -- MAP USER PORTS ABOVE THIS LINE ------------------
 
       Bus2IP_Clk                     => ipif_Bus2IP_Clk,

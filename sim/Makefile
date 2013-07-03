@@ -1,7 +1,9 @@
 #VCOM    = /usr/local/bin/vcom 
 VCOMOPS = -explicit -check_synthesis -2002 -quiet
+VLOGOPS = -vopt -nocovercells
 #MAKEFLAGS = --silent
 HDL_DIR = ../rtl/vhdl/
+VER_DIR = ../rtl/verilog/
 
 ##
 # hdl files
@@ -44,14 +46,19 @@ CORE_SRC =$(HDL_DIR)core/std_functions.vhd \
 		 $(HDL_DIR)core/sys_first_cell_logic.vhd \
 		 $(HDL_DIR)core/sys_pipeline.vhd \
 		 $(HDL_DIR)core/mont_multiplier.vhd \
+		 $(HDL_DIR)core/pulse_cdc.vhd \
+		 $(HDL_DIR)core/clk_sync.vhd \
 
+VER_SRC =$(VER_DIR)generic_fifo_dc.v \
+		 $(VER_DIR)generic_fifo_dc_gray.v
 
 ##
 # Testbench HDL files
 ##
 TB_SRC_DIR = ../bench/vhdl/
 TB_SRC =  	$(TB_SRC_DIR)mod_sim_exp_core_tb.vhd \
-			$(TB_SRC_DIR)msec_axi_tb.vhd
+			$(TB_SRC_DIR)msec_axi_tb.vhd \
+			$(TB_SRC_DIR)axi_tb.vhd
 
 ##
 # Interface HDL files
@@ -77,6 +84,7 @@ mod_sim_exp_com: mod_sim_exp_lib
 	#echo --
 	#echo building Modular Exponentiation Core
 	#echo --
+	vlog $(VLOGOPS) -work mod_sim_exp $(VER_SRC)
 	vcom $(VCOMOPS) -work mod_sim_exp $(CORE_SRC)
 	#echo Done!
 

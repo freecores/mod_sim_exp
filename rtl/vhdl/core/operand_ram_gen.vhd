@@ -61,9 +61,9 @@ entity operand_ram_gen is
   );
   port(
       -- global ports
-    clk       : in std_logic;
     collision : out std_logic; -- 1 if simultaneous write on RAM
       -- bus side connections (32-bit serial)
+    bus_clk        : in std_logic;
     write_operand  : in std_logic; -- write_enable
     operand_in_sel : in std_logic_vector(log2(depth)-1 downto 0); -- operand to write to
     operand_addr   : in std_logic_vector(log2(width/32)-1 downto 0); -- address of operand word to write
@@ -71,6 +71,7 @@ entity operand_ram_gen is
     result_out     : out std_logic_vector(31 downto 0); -- operand out, reading is always result operand
     operand_out_sel : in std_logic_vector(log2(depth)-1 downto 0); -- operand to give to multiplier
       -- multiplier side connections (width-bit parallel)
+    core_clk        : in std_logic;
     result_dest_op  : in std_logic_vector(log2(depth)-1 downto 0); -- operand select for result
     operand_out     : out std_logic_vector(width-1 downto 0); -- operand out to multiplier
     write_result    : in std_logic; -- write enable for multiplier side
@@ -88,22 +89,22 @@ architecture Behavioral of operand_ram_gen is
   -- total RAM structure signals
   signal weA_RAM : std_logic_vector(nrRAMs-1 downto 0);
   type wordsplit is array (nrRAMs-1 downto 0) of std_logic_vector(31 downto 0);
-  signal doutB_RAM : wordsplit;
+  signal doutA_RAM : wordsplit;
   --- PORT A : 32-bit write | (width)-bit read
   signal dinA    : std_logic_vector(31 downto 0);
-  signal doutA   : std_logic_vector(width-1 downto 0);
+  signal doutA   : std_logic_vector(31 downto 0);
   signal weA     : std_logic;
   signal addrA   : std_logic_vector(RAMselect_aw-1 downto 0);
   signal op_selA : std_logic_vector(RAMdepth_aw-1 downto 0);
   --- PORT B : 32-bit read  | (width)-bit write
   signal dinB    : std_logic_vector(width-1 downto 0);
-  signal doutB   : std_logic_vector(31 downto 0);
+  signal doutB   : std_logic_vector(width-1 downto 0);
   signal weB     : std_logic;
   signal addrB   : std_logic_vector(RAMselect_aw-1 downto 0);
   signal op_selB : std_logic_vector(RAMdepth_aw-1 downto 0);
   
   signal write_operand_i : std_logic;
-  signal op_selA_i : std_logic_vector(RAMdepth_aw-1 downto 0);
+  signal op_selB_i : std_logic_vector(RAMdepth_aw-1 downto 0);
 begin
 
 	-- WARNING: Very Important!
@@ -115,29 +116,29 @@ begin
   -- the dual port ram has a depth of 4 (each layer contains an operand)
   -- result is always stored in position 3
   -- doutb is always result
-  with write_operand_i select
-    op_selA_i <= operand_in_sel when '1',
+  with write_result select
+    op_selB_i <= result_dest_op when '1',
                  operand_out_sel when others;
   
   -- map signals to RAM
   -- PORTA
   weA <= write_operand_i; 
-  op_selA <= op_selA_i;
+  op_selA <= operand_in_sel;
   addrA <= operand_addr;
   dinA <= operand_in;
-  operand_out <= doutA;
+  result_out <= doutA;
   -- PORT B
   weB <= write_result;
-  op_selB <= result_dest_op; -- portB locked to result operand
+  op_selB <= op_selB_i; -- portB locked to result operand
   addrB <= operand_addr;
   dinB <= result_in;
-  result_out <= doutB;
+  operand_out <= doutB;
   
 	-- generate (width/32) blocks of 32-bit ram with a given depth
   -- these rams are tyed together to form the following structure
   --  True dual port ram:
-  --  - PORT A : 32-bit write | (width)-bit read
-  --  - PORT B : 32-bit read  | (width)-bit write
+  --  - PORT A : 32-bit write | 32-bit read
+  --  - PORT B : (width)-bit read  | (width)-bit write
   --                ^             ^
   -- addres       addr          op_sel
   -- 
@@ -148,17 +149,17 @@ begin
     )
     port map(
       -- port A : 32-bit
-      clkA  => clk,
+      clkA  => bus_clk,
       addrA => op_selA,
       weA   => weA_RAM(i),
       dinA  => dinA,
-      doutA => doutA(((i+1)*32)-1 downto i*32),
+      doutA => doutA_RAM(i),
       -- port B : 32-bit
-      clkB  => clk,
+      clkB  => core_clk,
       addrB => op_selB,
       weB   => weB,
       dinB  => dinB(((i+1)*32)-1 downto i*32),
-      doutB => doutB_RAM(i)
+      doutB => doutB(((i+1)*32)-1 downto i*32)
     );
     --    demultiplexer for write enable A signal
     process (addrA, weA)
@@ -171,7 +172,7 @@ begin
     end process;
   end generate;
   -- PORTB 32-bit read
-  doutB <= doutB_RAM(conv_integer(addrB)) when (conv_integer(addrB)<nrRAMs)
+  doutA <= doutA_RAM(conv_integer(addrA)) when (conv_integer(addrA)<nrRAMs)
           else (others=>'0');
   
 end Behavioral;

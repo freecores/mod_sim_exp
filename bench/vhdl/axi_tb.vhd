@@ -59,6 +59,7 @@ end axi_tb;
 architecture arch of axi_tb is
   -- constants
   constant CLK_PERIOD : time := 10 ns;
+  constant CORE_CLK_PERIOD : time := 4 ns;
   constant C_S_AXI_DATA_WIDTH : integer := 32;
   constant C_S_AXI_ADDR_WIDTH : integer := 32;
   
@@ -71,12 +72,14 @@ architecture arch of axi_tb is
   constant C_NR_STAGES_TOTAL : integer := 96;
   constant C_NR_STAGES_LOW   : integer := 32;
   constant C_SPLIT_PIPELINE  : boolean := true; 
-  constant C_FIFO_DEPTH      : integer := 32; -- set to (maximum exponent width)/16
+  constant C_FIFO_AW         : integer := 7; -- set to log2( (maximum exponent width)/16 )
   constant C_MEM_STYLE       : string  := "generic"; -- xil_prim, generic, asym are valid options
   constant C_FPGA_MAN        : string  := "xilinx";  -- xilinx, altera are valid options
   constant C_BASEADDR        : std_logic_vector(0 to 31) := x"A0000000";
   constant C_HIGHADDR        : std_logic_vector(0 to 31) := x"A0007FFF";
   
+  
+  signal core_clk     : std_logic := '0';
   -------------------------
   -- AXI4lite interface
   -------------------------
@@ -120,7 +123,17 @@ begin
       wait for CLK_PERIOD/2;
     end loop;
   end process;
-
+  
+  core_clk_process : process
+  begin
+    while (true) loop
+      core_clk <= '0';
+      wait for CORE_CLK_PERIOD/2;
+      core_clk <= '1';
+      wait for CORE_CLK_PERIOD/2;
+    end loop;
+  end process;
+  
 
   stim_proc : process
   
@@ -266,7 +279,7 @@ begin
     C_NR_STAGES_TOTAL => C_NR_STAGES_TOTAL,
     C_NR_STAGES_LOW   => C_NR_STAGES_LOW,
     C_SPLIT_PIPELINE  => C_SPLIT_PIPELINE,
-    C_FIFO_DEPTH      => C_FIFO_DEPTH,
+    C_FIFO_AW         => C_FIFO_AW,
     C_MEM_STYLE       => C_MEM_STYLE, -- xil_prim, generic, asym are valid options
     C_FPGA_MAN        => C_FPGA_MAN,   -- xilinx, altera are valid options
     C_BASEADDR        => C_BASEADDR,
@@ -274,7 +287,7 @@ begin
   )
   port map(
     --USER ports
-
+    core_clk => core_clk,
     -------------------------
     -- AXI4lite interface
     -------------------------

@@ -100,7 +100,7 @@ entity user_logic is
     C_NR_STAGES_TOTAL : integer := 96;
     C_NR_STAGES_LOW   : integer := 32;
     C_SPLIT_PIPELINE  : boolean := true;
-    C_FIFO_DEPTH      : integer := 32;
+    C_FIFO_AW         : integer := 7;
     C_MEM_STYLE       : string  := "xil_prim"; -- xil_prim, generic, asym are valid options
     C_FPGA_MAN        : string  := "xilinx";    -- xilinx, altera are valid options
     -- ADD USER GENERICS ABOVE THIS LINE ---------------
@@ -118,8 +118,8 @@ entity user_logic is
   (
     -- ADD USER PORTS BELOW THIS LINE ------------------
     --USER ports added here
-	 calc_time                      : out std_logic;
-	-- ctrl_sigs                      : out std_logic_vector( downto );
+	  calc_time                      : out std_logic;
+	  core_clk                       : in std_logic;
     -- ADD USER PORTS ABOVE THIS LINE ------------------
 
     -- DO NOT EDIT BELOW THIS LINE ---------------------
@@ -406,13 +406,14 @@ begin
     C_NR_STAGES_TOTAL => C_NR_STAGES_TOTAL,
     C_NR_STAGES_LOW   => C_NR_STAGES_LOW,
     C_SPLIT_PIPELINE  => C_SPLIT_PIPELINE,
-    C_FIFO_DEPTH      => C_FIFO_DEPTH,
+    C_FIFO_AW         => C_FIFO_AW,
     C_MEM_STYLE       => C_MEM_STYLE,
     C_FPGA_MAN        => C_FPGA_MAN
   )
   port map(
-    clk   => Bus2IP_Clk,
-    reset => Bus2IP_Reset,
+    core_clk  => core_clk,
+    bus_clk   => Bus2IP_Clk,
+    reset     => Bus2IP_Reset,
       -- operand memory interface (plb shared memory)
     write_enable => core_write_enable,
     data_in      => core_data_in,

@@ -65,14 +65,15 @@ entity mod_sim_exp_core is
     C_NR_STAGES_TOTAL : integer := 96;
     C_NR_STAGES_LOW   : integer := 32;
     C_SPLIT_PIPELINE  : boolean := true;
-    C_FIFO_DEPTH      : integer := 32;
+    C_FIFO_AW         : integer := 7;      -- Address width for FIFO pointers
     C_MEM_STYLE       : string  := "asym"; -- xil_prim, generic, asym are valid options
     C_FPGA_MAN        : string  := "xilinx"   -- xilinx, altera are valid options
   );
   port(
-    clk   : in  std_logic;
-    reset : in  std_logic;
+    core_clk : in  std_logic;
+    reset    : in  std_logic;
       -- operand memory interface (plb shared memory)
+    bus_clk      : in  std_logic;
     write_enable : in  std_logic; -- write data to operand ram
     data_in      : in  std_logic_vector (31 downto 0);  -- operand ram data in
     rw_address   : in  std_logic_vector (8 downto 0); -- operand ram address bus
@@ -115,6 +116,10 @@ architecture Structural of mod_sim_exp_core is
   signal load_x         : std_logic;
   signal load_result    : std_logic;
   signal modulus_sel_i  : std_logic_vector(0 downto 0);
+  signal core_ready     : std_logic;
+  signal core_calc_time : std_logic;
+  signal core_collision : std_logic;
+  signal core_start     : std_logic;
 
   -- fifo signals
   signal fifo_empty : std_logic;
@@ -127,26 +132,6 @@ begin
     report "C_MEM_STYLE incorrect!, it must be one of these: xil_prim, generic or asym" severity failure;
   assert (C_FPGA_MAN="xilinx" or C_FPGA_MAN="altera") 
     report "C_FPGA_MAN incorrect!, it must be one of these: xilinx or altera" severity failure;
-  
-  -- The actual multiplier
-  the_multiplier : mont_multiplier
-  generic map(
-    n     => C_NR_BITS_TOTAL,
-    t     => C_NR_STAGES_TOTAL,
-    tl    => C_NR_STAGES_LOW,
-    split => C_SPLIT_PIPELINE
-  )
-  port map(
-    core_clk => clk,
-    xy       => xy,
-    m        => m,
-    r        => r,
-    start    => start_mult,
-    reset    => reset,
-    p_sel    => p_sel,
-    load_x   => load_x,
-    ready    => mult_ready
-  );
 
   -- Block ram memory for storing the operands and the modulus
   the_memory : operand_mem
@@ -158,6 +143,7 @@ begin
     device    => C_FPGA_MAN
   )
   port map(
+    bus_clk        => bus_clk,
     data_in        => data_in,
     data_out       => data_out,
     rw_address     => rw_address,
@@ -165,11 +151,11 @@ begin
     op_sel         => op_sel,
     xy_out         => xy,
     m              => m,
+    core_clk       => core_clk,
     result_in      => r,
     load_result    => load_result,
     result_dest_op => result_dest_op,
-    collision      => collision,
-    clk            => clk,
+    collision      => core_collision,
     modulus_sel    => modulus_sel_i
   );
   
@@ -180,7 +166,8 @@ begin
   xil_prim_fifo : if C_MEM_STYLE="xil_prim" generate
     the_exponent_fifo : fifo_primitive
     port map(
-      clk    => clk,
+      push_clk => bus_clk,
+      pop_clk => core_clk,
       din    => fifo_din,
       dout   => fifo_dout,
       empty  => fifo_empty,
@@ -192,44 +179,102 @@ begin
       nopush => fifo_nopush
     );
   end generate;
-	gen_fifo : if (C_MEM_STYLE="generic") or (C_MEM_STYLE="asym") generate
-    the_exponent_fifo : fifo_generic
+  gen_fifo : if (C_MEM_STYLE = "generic") or (C_MEM_STYLE = "asym") generate
+    the_exponent_fifo : entity mod_sim_exp.generic_fifo_dc
     generic map(
-      depth => C_FIFO_DEPTH
+      dw => 32,
+      aw => C_FIFO_AW
     )
     port map(
-      clk    => clk,
+      wr_clk => bus_clk,
+      rd_clk => core_clk,
       din    => fifo_din,
       dout   => fifo_dout,
       empty  => fifo_empty,
       full   => fifo_full,
-      push   => fifo_push,
-      pop    => fifo_pop,
-      reset  => reset,
+      we     => fifo_push,
+      re     => fifo_pop,
+      clr    => reset,
       nopop  => fifo_nopop,
       nopush => fifo_nopush
     );
   end generate;
   
+  -- The actual multiplier
+  the_multiplier : mont_multiplier
+  generic map(
+    n     => C_NR_BITS_TOTAL,
+    t     => C_NR_STAGES_TOTAL,
+    tl    => C_NR_STAGES_LOW,
+    split => C_SPLIT_PIPELINE
+  )
+  port map(
+    core_clk => core_clk,
+    xy       => xy,
+    m        => m,
+    r        => r,
+    start    => start_mult,
+    reset    => reset,  -- asynchronious reset
+    p_sel    => p_sel,
+    load_x   => load_x,
+    ready    => mult_ready
+  );
+  
   -- The control logic for the core
   the_control_unit : mont_ctrl 
   port map(
-    clk              => clk,
-    reset            => reset,
-    start            => start,
+    clk              => core_clk,
+    reset            => reset, -- asynchronious reset
+    start            => core_start,
     x_sel_single     => x_sel_single,
     y_sel_single     => y_sel_single,
     run_auto         => exp_m,
     op_buffer_empty  => fifo_empty,
     op_sel_buffer    => fifo_dout,
     read_buffer      => fifo_pop,
-    done             => ready,
-    calc_time        => calc_time,
+    done             => core_ready,
+    calc_time        => core_calc_time,
     op_sel           => op_sel,
     load_x           => load_x,
     load_result      => load_result,
     start_multiplier => start_mult,
     multiplier_ready => mult_ready
+  );
+  
+  -- go from bus clock domain to core clock domain
+  start_pulse : pulse_cdc
+  port map(
+    reset  => reset,
+    clkA   => bus_clk,
+    pulseA => start,
+    clkB   => core_clk,
+    pulseB => core_start
+  );
+  
+  -- go from core clock domain to bus clock domain
+  ready_pulse : pulse_cdc
+  port map(
+    reset  => reset,
+    clkA   => core_clk,
+    pulseA => core_ready,
+    clkB   => bus_clk,
+    pulseB => ready
+  );
+  
+  sync_to_bus_clk : clk_sync
+  port map(
+    sigA => core_calc_time,
+    clkB => bus_clk,
+    sigB => calc_time
+  );
+  
+  collision_pulse : pulse_cdc
+  port map(
+    reset  => reset,
+    clkA   => core_clk,
+    pulseA => core_collision,
+    clkB   => bus_clk,
+    pulseB => collision
   );
 
 end Structural;

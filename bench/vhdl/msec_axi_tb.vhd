@@ -79,8 +79,8 @@ architecture arch of msec_axi_tb is
   constant C_NR_STAGES_TOTAL : integer := 96;
   constant C_NR_STAGES_LOW   : integer := 32;
   constant C_SPLIT_PIPELINE  : boolean := true; 
-  constant C_FIFO_DEPTH      : integer := 32; -- set to (maximum exponent width)/16
-  constant C_MEM_STYLE       : string  := "generic"; -- xil_prim, generic, asym are valid options
+  constant C_FIFO_AW         : integer := 7; -- set to log2( (maximum exponent width)/16 )
+  constant C_MEM_STYLE       : string  := "xil_prim"; -- xil_prim, generic, asym are valid options
   constant C_FPGA_MAN        : string  := "xilinx";  -- xilinx, altera are valid options
   constant C_BASEADDR        : std_logic_vector(0 to 31) := x"A0000000";
   constant C_HIGHADDR        : std_logic_vector(0 to 31) := x"A0007FFF";
@@ -821,7 +821,7 @@ begin
     C_NR_STAGES_TOTAL => C_NR_STAGES_TOTAL,
     C_NR_STAGES_LOW   => C_NR_STAGES_LOW,
     C_SPLIT_PIPELINE  => C_SPLIT_PIPELINE,
-    C_FIFO_DEPTH      => C_FIFO_DEPTH,
+    C_FIFO_AW         => C_FIFO_AW,
     C_MEM_STYLE       => C_MEM_STYLE, -- xil_prim, generic, asym are valid options
     C_FPGA_MAN        => C_FPGA_MAN,   -- xilinx, altera are valid options
     C_BASEADDR        => C_BASEADDR,
@@ -831,6 +831,7 @@ begin
     --USER ports
     calc_time => calc_time,
     IntrEvent => IntrEvent,
+    core_clk  => core_clk,
     -------------------------
     -- AXI4lite interface
     -------------------------
