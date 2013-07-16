@@ -18,7 +18,6 @@ CORE_SRC =$(HDL_DIR)core/std_functions.vhd \
 		 $(HDL_DIR)ram/tdpram_asym.vhd \
 		 $(HDL_DIR)ram/tdpramblock_asym.vhd \
 		 $(HDL_DIR)core/operand_ram_asym.vhd \
-		 $(HDL_DIR)core/fifo_generic.vhd \
 		 $(HDL_DIR)core/modulus_ram_gen.vhd \
 		 $(HDL_DIR)core/operand_ram_gen.vhd \
 		 $(HDL_DIR)core/adder_block.vhd \
@@ -84,7 +83,7 @@ mod_sim_exp_com: mod_sim_exp_lib
 	#echo --
 	#echo building Modular Exponentiation Core
 	#echo --
-	vlog $(VLOGOPS) -work mod_sim_exp $(VER_SRC)
+	vlog $(VLOGOPS) -work work $(VER_SRC)
 	vcom $(VCOMOPS) -work mod_sim_exp $(CORE_SRC)
 	#echo Done!
 
@@ -100,7 +99,7 @@ msec_if: work_lib
 	#echo --
 	vcom $(VCOMOPS) -work work $(IF_SRC)
 
-mod_sim_exp: mod_sim_exp_com mod_sim_exp_tb 
+mod_sim_exp: mod_sim_exp_com msec_if mod_sim_exp_tb 
 	vsim -c -do mod_sim_exp.do -lib work mod_sim_exp_core_tb
 
 mod_sim_exp_axi: mod_sim_exp_com msec_if mod_sim_exp_tb 
