@@ -79,11 +79,11 @@ work_lib:
 
 libs: mod_sim_exp_lib work_lib
 
-mod_sim_exp_com: mod_sim_exp_lib   
+mod_sim_exp_com: mod_sim_exp_lib
 	#echo --
 	#echo building Modular Exponentiation Core
 	#echo --
-	vlog $(VLOGOPS) -work work $(VER_SRC)
+	vlog $(VLOGOPS) -work mod_sim_exp $(VER_SRC)
 	vcom $(VCOMOPS) -work mod_sim_exp $(CORE_SRC)
 	#echo Done!
 

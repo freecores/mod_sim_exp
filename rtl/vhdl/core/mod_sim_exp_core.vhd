@@ -180,7 +180,7 @@ begin
     );
   end generate;
   gen_fifo : if (C_MEM_STYLE = "generic") or (C_MEM_STYLE = "asym") generate
-    the_exponent_fifo : entity mod_sim_exp.generic_fifo_dc
+    the_exponent_fifo : entity mod_sim_exp.generic_fifo_dc_gray
     generic map(
       dw => 32,
       aw => C_FIFO_AW
