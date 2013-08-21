@@ -3,7 +3,8 @@
 \section{Block diagram}
 The architecture for the full IP core is shown in the Figure~\ref{blockdiagram}. It consists of 2 major parts, the actual
 exponentiation core (\verb|mod_sim_exp_core| entity) with a bus interface wrapped around it. In the following sections these 
-different blocks are described in detail.\\
+different blocks are described in detail. The bus interface and the exponentiation core can run on different clock
+frequencies, so they are independent of each other.\\
 \begin{figure}[H]
 \centering
 \includegraphics[trim=1.2cm 1.2cm 1.2cm 1.2cm, width=10cm]{pictures/block_diagram.pdf}
@@ -29,6 +30,12 @@ core. It is made up by 4 main blocks (Figure~\ref{msec_structure}):\\
 \cprotect\caption{\verb|mod_sim_exp_core| structure}
 \label{msec_structure}
 \end{figure}
+
+The multiplier and control unit operate on the \verb|core_clk| clock frequency and the interface to the operand RAM and
+exponent FIFO operates on the \verb|bus_clk| clock frequency. The transition between the 2 clock domains is mainly
+implemented by the RAM and FIFO. For the remainder, the necessary control signals are synchronised to the
+\verb|bus_clk|. Thus when using the \verb|mod_sim_exp_core|, one can thus assume that al ports are operating on the
+\verb|bus_clk| clock signal.
 
 \subsection{Multiplier}
 The kernel of this design is a pipelined Montgomery multiplier. A Montgomery multiplication\cite{MontModMul} allows efficient implementation of a
@@ -123,12 +130,15 @@ Reading and writing (from the bus side) to the operands and modulus is done one 
 To store the exponents, there is a FIFO of 32 bit wide. Every 32 bit entry has to be formatted as 16 bit of $e_0$ for the
 lower part [15:0] and 16 bit of $e_1$ for the higher part [31:16]. Entries have to be pushed in the FIFO starting with the least significant word and ending with the most significant word of the exponents.
 
-For the FIFO there are 2 styles available. The implementation style depends on the style of the operand memory and it can not be set directly. When  the RAM option \verb|"xil_prim"| is chosen, the resulting FIFO will use the FIFO18E1 primitive. It is able to store 512 entries, meaning 2 exponents of each 8192 bit long.
+For the FIFO there are 2 styles available. The implementation style depends on the style of the operand memory and it can not be set directly. When the RAM option \verb|"xil_prim"| is chosen, the resulting FIFO will use the FIFO18E1 primitive. It is able to store 512 entries, meaning 2 exponents of each 8192 bit long.
 
-When the RAM options \verb|"generic"| or \verb|"asym"| are chosen, a generic FIFO will be implemented. This consist of a symmetric RAM with the control logic for a FIFO. The depth of this generic FIFO is adjustable with the parameter \verb|C_FIFO_DEPTH|.
-The number of RAM blocks for the FIFO is given by (\ref{eq:fifoblocks}), where \verb|RAMBLOCK_SIZE| is the size [bits] of the FPGA's RAM primitive.
+When the RAM options \verb|"generic"| or \verb|"asym"| are chosen, a generic FIFO \footnote{This FIFO is a slightly
+modified version of the generic FIFOs project at OpenCores.org (http://opencores.org/project,generic\_fifos).} will be
+implemented.
+This consist of a dual port symmetric RAM with the control logic for a FIFO. The depth of this generic FIFO is adjustable with the parameter \verb|C_FIFO_AW|. The number of RAM blocks for the FIFO is given by (\ref{eq:fifoblocks}), where
+\verb|RAMBLOCK_SIZE| is the size [bits] of the FPGA's RAM primitive.
 \begin{align}
-	\left[\left(\mathtt{C\_FIFO\_DEPTH}+1\right) \cdot 32 \right]/ \mathtt{RAMBLOCK\_SIZE} \label{eq:fifoblocks}
+	\left[\left(\mathtt{2^{C\_FIFO\_AW}}+1\right) \cdot 32 \right]/ \mathtt{RAMBLOCK\_SIZE} \label{eq:fifoblocks}
 \end{align}
 
 \subsection{Control unit}
@@ -147,7 +157,9 @@ The \verb|mod_sim_exp_core| IO ports\\
 \rowcolor{Gray}
 \textbf{Port} & \textbf{Width} & \textbf{Direction} & \textbf{Description} \bigstrut\\
 \hline
-\verb|clk|   & 1     & in    & core clock input \bigstrut\\
+\verb|core_clk|   & 1     & in    & core clock input, clock signal for the multiplier and control unit \bigstrut\\
+\hline
+\verb|bus_clk|   & 1     & in    & bus clock input, clock signal for all core IO \bigstrut\\
 \hline
 \verb|reset| & 1     & in    & reset signal (active high) resets the pipeline, fifo and control logic \bigstrut\\
 \hline
@@ -213,7 +225,8 @@ The \verb|mod_sim_exp_core| parameters\\
 		\hline
 		\verb|C_SPLIT_PIPELINE| & option to split the pipeline in 2 parts & boolean & true \bigstrut\\
 		\hline
-		\verb|C_FIFO_DEPTH| & depth of the generic FIFO, only applicable if \verb|C_MEM_STYLE| = \verb|"generic"| or \verb|"asym"|  & integer & 32 \bigstrut\\
+		\verb|C_FIFO_AW| & address width of the generic FIFO pointers, FIFO size is equal to $2^{C\_FIFO\_AW} $. & integer & 7 \bigstrut\\
+						 & only	applicable if \verb|C_MEM_STYLE| = \verb|"generic"| or \verb|"asym"|  & & \\
 		\hline
 		\verb|C_MEM_STYLE| & select the RAM memory style (3 options): & string & \verb|"generic"| \bigstrut\\
 							& \verb|"generic"| : use general 32-bit RAMs & & \\

@@ -27,7 +27,8 @@ listed in the table below.
 		\hline
 		\multicolumn{4}{|l|}{\textit{\textbf{Memory configuration}}} \\		
 		\hline
-		\verb|C_FIFO_DEPTH| & depth of the generic FIFO, only applicable if \verb|C_MEM_STYLE| = \verb|"generic"| or \verb|"asym"|  & integer & 32 \bigstrut\\
+		\verb|C_FIFO_AW| & address width of the generic FIFO pointers, FIFO size is equal to $2^{C\_FIFO\_AW} $. & integer & 7 \bigstrut\\
+						 & only	applicable if \verb|C_MEM_STYLE| = \verb|"generic"| or \verb|"asym"|  & & \\
 		\hline
 		\verb|C_MEM_STYLE| & the memory structure to use for the RAM, choice between 3 options: & string & \verb|"generic"| \bigstrut\\
 							& \verb|"xil_prim"| : use xilinx primitives & & \\
