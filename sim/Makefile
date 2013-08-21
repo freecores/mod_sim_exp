@@ -69,7 +69,7 @@ IF_SRC =  	$(IF_SRC_DIR)axi/msec_ipcore_axilite.vhd
 all: mod_sim_exp
 
 clean:
-	rm -rf *_lib
+	rm -rf *_lib work mod_sim_exp *.wlf
 
 mod_sim_exp_lib: 
 	vlib mod_sim_exp
